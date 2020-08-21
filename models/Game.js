@@ -7,11 +7,15 @@ module.exports = class Game {
     this.rooms = {};
   }
 
-  addPlayer(uid, socketId, nickname) {
+  addPlayer(uid, nickname) {
     this.players[uid] = new Player(uid, nickname);
   }
 
   deletePlayer(id) {
     delete this.players[id];
+  }
+
+  getBasicPlayersData() {
+    return Object.values(this.players).map((player) => player.getBasicData());
   }
 };

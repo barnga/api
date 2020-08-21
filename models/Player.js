@@ -3,5 +3,8 @@ module.exports = class Player {
     this.id = id;
     this.nickname = nickname;
   }
-};
 
+  getBasicData() {
+    return { id: this.id, nickname: this.nickname };
+  }
+};

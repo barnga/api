@@ -4,6 +4,7 @@ const socketIo = require('socket.io');
 const index = require('./routes/index');
 const GameManager = require('./models/GameManager');
 const Game = require('./models/Game');
+const generateId = require('./helpers/generateId');
 
 const port = process.env.port || 3000;
 const app = express();
@@ -19,34 +20,26 @@ server.listen(port, () => {
 
 const gameList = new GameManager();
 
-const generateId = (length) => {
-  let text = "";
-  const charset = "abcdefghijklmnopqrstuvwxyz";
-  for (let i = 0; i < length; i++) {
-    text += charset.charAt(Math.floor(Math.random() * charset.length));
-  }
-  return text;
-};
-
 io.on('connection', (socket) => {
   console.log(gameList.games);
 
   socket.on('create game', (values, fn) => {
     const gameId = generateId(6);
-    const game = new Game(`/${gameId}`);
+    const game = new Game(gameId);
+
     gameList.addGame(game);
     fn({ success: true, gameId });
   });
 
   socket.on('join game', (values, fn) => {
     const { gameId, nickname } = values;
-    const game = gameList.games[`/${gameId}`];
-    console.log(socket.handshake.query.sessionId);
+    const game = gameList.games[gameId];
+    const playerId = socket.handshake.query.sessionId;
 
     if (game) {
       fn({ success: true });
-      game.addPlayer(socket.handshake.query.sessionId, nickname);
-      io.of(`/${gameId}`).emit('update', game.players);
+      game.addPlayer(playerId, nickname);
+      io.of(`/${gameId}`).emit('player update', game.getBasicPlayersData());
     } else {
       fn({ success: false });
     }
@@ -58,18 +51,22 @@ io.on('connection', (socket) => {
 });
 
 nsp.on('connection', (socket) => {
-  const gameId = socket.nsp.name;
+  const gameId = socket.nsp['name'].split('/')[1];
   const game = gameList.games[gameId];
+  const playerId = socket.handshake.query.sessionId;
 
   if (game) {
+    io.of(`/${gameId}`).emit('player update', game.getBasicPlayersData());
     console.log(`Someone connected to Game ${socket.nsp.name}`);
 
     socket.on('disconnect', () => {
-      if (socket.id) {
-        game.deletePlayer(socket.handshake.query.sessionId);
+      if (playerId) {
+        game.deletePlayer(playerId);
       }
     });
   } else {
     socket.emit('404', `Game ${gameId} does not exist`);
   }
 });
+
+// TODO: Delete game from GameManager if no sockets are connected
