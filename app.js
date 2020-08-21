@@ -56,7 +56,7 @@ nsp.on('connection', (socket) => {
   const { sessionId, role } = socket.handshake.query;
 
   if (game) {
-    if (!game.players[sessionId] && (role === 'player')) {
+    if (!game.players[sessionId] && (role !== 'teacher')) {
       socket.emit('redirect to join');
     }
 
