@@ -34,11 +34,11 @@ io.on('connection', (socket) => {
   socket.on('join game', (values, fn) => {
     const { gameId, nickname } = values;
     const game = gameList.games[gameId];
-    const playerId = socket.handshake.query.sessionId;
+    const { sessionId } = socket.handshake.query;
 
     if (game) {
       fn({ success: true });
-      game.addPlayer(playerId, nickname);
+      game.addPlayer(sessionId, nickname);
       io.of(`/${gameId}`).emit('player update', game.getBasicPlayersData());
     } else {
       fn({ success: false });
@@ -53,15 +53,19 @@ io.on('connection', (socket) => {
 nsp.on('connection', (socket) => {
   const gameId = socket.nsp['name'].split('/')[1];
   const game = gameList.games[gameId];
-  const playerId = socket.handshake.query.sessionId;
+  const { sessionId, role } = socket.handshake.query;
 
   if (game) {
+    if (!game.players[sessionId] && (role === 'player')) {
+      socket.emit('redirect to join');
+    }
+
     io.of(`/${gameId}`).emit('player update', game.getBasicPlayersData());
     console.log(`Someone connected to Game ${socket.nsp.name}`);
 
     socket.on('disconnect', () => {
-      if (playerId) {
-        game.deletePlayer(playerId);
+      if (sessionId) {
+        game.deletePlayer(sessionId);
       }
     });
   } else {
