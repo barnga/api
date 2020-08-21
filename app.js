@@ -58,19 +58,21 @@ nsp.on('connection', (socket) => {
   if (game) {
     if (!game.players[sessionId] && (role !== 'teacher')) {
       socket.emit('redirect to join');
+    } else {
+      socket.emit('200');
+      io.of(`/${gameId}`).emit('player update', game.getBasicPlayersData());
+      console.log(`Someone connected to Game ${socket.nsp.name}`);
     }
-
-    io.of(`/${gameId}`).emit('player update', game.getBasicPlayersData());
-    console.log(`Someone connected to Game ${socket.nsp.name}`);
 
     socket.on('disconnect', () => {
       if (sessionId) {
         game.deletePlayer(sessionId);
+      }
+      if (Object.keys(socket.nsp.connected).length === 0) {
+        gameList.deleteGame(game);
       }
     });
   } else {
     socket.emit('404', `Game ${gameId} does not exist`);
   }
 });
-
-// TODO: Delete game from GameManager if no sockets are connected
