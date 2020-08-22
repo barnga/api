@@ -60,13 +60,22 @@ nsp.on('connection', (socket) => {
       socket.emit('redirect to join');
     } else {
       socket.emit('200');
-      io.of(`/${gameId}`).emit('player update', game.getBasicPlayersData());
+      socket.nsp.emit('player update', game.getBasicPlayersData());
       console.log(`Someone connected to Game ${socket.nsp.name}`);
     }
+
+    socket.on('start game', (fn) => {
+      const hasMinimumPlayers = Object.keys(game.players).length === 1;
+      fn({ hasMinimumPlayers });
+      if (hasMinimumPlayers) {
+        socket.nsp.emit('game started');
+      }
+    });
 
     socket.on('disconnect', () => {
       if (sessionId) {
         game.deletePlayer(sessionId);
+        socket.nsp.emit('player update', game.getBasicPlayersData());
       }
       if (Object.keys(socket.nsp.connected).length === 0) {
         gameList.deleteGame(game);
