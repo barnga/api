@@ -37,8 +37,8 @@ io.on('connection', (socket) => {
     const { sessionId } = socket.handshake.query;
 
     if (game) {
-      fn({ success: true });
       game.addPlayer(sessionId, nickname);
+      fn({ success: true });
       io.of(`/${gameId}`).emit('player update', game.getBasicPlayersData());
     } else {
       fn({ success: false });
