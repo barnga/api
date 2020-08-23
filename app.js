@@ -78,6 +78,7 @@ nsp.on('connection', (socket) => {
           .then(() => {
             Object.entries(game.rooms).forEach((room) => {
               const [roomId, players] = room;
+              players.forEach((playerId) => game.players[playerId].joinRoom(roomId));
               const socketIds = players.map((playerId) => game.players[playerId].socketId);
               socketIds.forEach((socketId) => socket.nsp.connected[socketId].join(roomId));
             });
@@ -87,7 +88,9 @@ nsp.on('connection', (socket) => {
     });
 
     socket.on('joined game', (fn) => {
-      fn({ rooms: game.rooms });
+      const roomId = game.players[socket.handshake.query.sessionId].room;
+      const roomNumber = Object.keys(game.rooms).indexOf(roomId) + 1;
+      fn({ roomNumber });
     });
 
     socket.on('disconnect', () => {
