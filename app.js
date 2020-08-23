@@ -37,7 +37,7 @@ io.on('connection', (socket) => {
     const { sessionId } = socket.handshake.query;
 
     if (game) {
-      game.addPlayer(sessionId, nickname);
+      game.addPlayer(sessionId, socket.id, nickname);
       fn({ success: true });
       io.of(`/${gameId}`).emit('player update', game.getBasicPlayersData());
     } else {
@@ -59,15 +59,28 @@ nsp.on('connection', (socket) => {
     if (!game.players[sessionId] && (role !== 'teacher')) {
       socket.emit('redirect to join');
     } else {
+      if (role === 'player') {
+        game.players[sessionId].socketId = socket.id;
+      }
       socket.emit('200');
       socket.nsp.emit('player update', game.getBasicPlayersData());
-      console.log(`Someone connected to Game ${socket.nsp.name}`);
     }
 
     socket.on('start game', (fn) => {
-      const hasMinimumPlayers = Object.keys(game.players).length === 1;
+      // TODO: Fix logic
+      const hasMinimumPlayers = Object.keys(game.players).length > 2;
       fn({ hasMinimumPlayers });
+
       if (hasMinimumPlayers) {
+        game.createRooms(2);
+        console.log(game.rooms);
+        Object.entries(game.rooms).forEach((room) => {
+          const [roomId, players] = room;
+          players.forEach((playerId) => {
+            console.log(socket.nsp.connected);
+            socket.nsp.connected[playerId].join(roomId);
+          });
+        });
         socket.nsp.emit('game started');
       }
     });
