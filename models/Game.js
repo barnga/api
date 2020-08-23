@@ -1,4 +1,5 @@
 const Player = require('./Player');
+const Teacher = require('./Player');
 const generateId = require('../helpers/generateId');
 const shuffleArray = require('../helpers/shuffleArray');
 const chunkArray = require('../helpers/chunkArray');
@@ -7,7 +8,12 @@ module.exports = class Game {
   constructor(gameId) {
     this.gameId = gameId;
     this.players = {};
+    this.teachers = {};
     this.rooms = {};
+  }
+
+  addTeacher(uid, socketId) {
+    this.teachers[uid] = new Teacher(uid, socketId);
   }
 
   addPlayer(uid, socketId, nickname) {
@@ -23,13 +29,17 @@ module.exports = class Game {
   }
 
   createRooms(size) {
-    const playerIds = Object.values(this.players).map((player) => player.socketId);
-    const roomCount = Math.floor(playerIds.length / size);
-    const parsedIds = chunkArray(shuffleArray(playerIds), size);
+    return new Promise((resolve) => {
+      const playerIds = Object.values(this.players).map((player) => player.id);
+      const roomCount = Math.floor(playerIds.length / size);
+      const parsedIds = chunkArray(shuffleArray(playerIds), size);
 
-    for (let i = 0; i < roomCount; i++) {
-      const roomId = generateId(15);
-      this.rooms[roomId] = parsedIds[i];
-    }
+      for (let i = 0; i < roomCount; i++) {
+        const roomId = generateId(15);
+        this.rooms[roomId] = parsedIds[i];
+      }
+
+      resolve();
+    });
   }
 };

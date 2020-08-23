@@ -26,8 +26,10 @@ io.on('connection', (socket) => {
   socket.on('create game', (values, fn) => {
     const gameId = generateId(6);
     const game = new Game(gameId);
+    const { sessionId } = socket.handshake.query;
 
     gameList.addGame(game);
+    gameList.games[gameId].addTeacher(sessionId, socket.id);
     fn({ success: true, gameId });
   });
 
@@ -53,13 +55,13 @@ io.on('connection', (socket) => {
 nsp.on('connection', (socket) => {
   const gameId = socket.nsp['name'].split('/')[1];
   const game = gameList.games[gameId];
-  const { sessionId, role } = socket.handshake.query;
+  const { sessionId } = socket.handshake.query;
 
   if (game) {
-    if (!game.players[sessionId] && (role !== 'teacher')) {
+    if (!game.teachers[sessionId] && !game.players[sessionId]) {
       socket.emit('redirect to join');
     } else {
-      if (role === 'player') {
+      if (game.players[sessionId]) {
         game.players[sessionId].socketId = socket.id;
       }
       socket.emit('200');
@@ -67,22 +69,25 @@ nsp.on('connection', (socket) => {
     }
 
     socket.on('start game', (fn) => {
-      // TODO: Fix logic
+      // TODO: Customize logic
       const hasMinimumPlayers = Object.keys(game.players).length > 2;
       fn({ hasMinimumPlayers });
 
       if (hasMinimumPlayers) {
-        game.createRooms(2);
-        console.log(game.rooms);
-        Object.entries(game.rooms).forEach((room) => {
-          const [roomId, players] = room;
-          players.forEach((playerId) => {
-            console.log(socket.nsp.connected);
-            socket.nsp.connected[playerId].join(roomId);
+        game.createRooms(2)
+          .then(() => {
+            Object.entries(game.rooms).forEach((room) => {
+              const [roomId, players] = room;
+              const socketIds = players.map((playerId) => game.players[playerId].socketId);
+              socketIds.forEach((socketId) => socket.nsp.connected[socketId].join(roomId));
+            });
           });
-        });
         socket.nsp.emit('game started');
       }
+    });
+
+    socket.on('joined game', (fn) => {
+      fn({ rooms: game.rooms });
     });
 
     socket.on('disconnect', () => {
