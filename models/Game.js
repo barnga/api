@@ -42,4 +42,8 @@ module.exports = class Game {
       resolve();
     });
   }
+
+  getBasicRoomsData() {
+
+  }
 };

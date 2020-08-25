@@ -21,8 +21,6 @@ server.listen(port, () => {
 const gameList = new GameManager();
 
 io.on('connection', (socket) => {
-  console.log(gameList.games);
-
   socket.on('create game', (values, fn) => {
     const gameId = generateId(6);
     const game = new Game(gameId);
@@ -87,10 +85,15 @@ nsp.on('connection', (socket) => {
       }
     });
 
-    socket.on('joined game', (fn) => {
+    socket.on('joined room', (fn) => {
       const roomId = game.players[socket.handshake.query.sessionId].room;
       const roomNumber = Object.keys(game.rooms).indexOf(roomId) + 1;
       fn({ roomNumber });
+    });
+
+    socket.on('new message', (message) => {
+      const roomId = Object.keys(socket.rooms)[1];
+      socket.nsp.to(roomId).emit('messages update', message);
     });
 
     socket.on('disconnect', () => {
