@@ -36,10 +36,10 @@ io.on('connection', (socket) => {
     const game = gameList.games[gameId];
     const { sessionId } = socket.handshake.query;
 
+    // TODO: Stop player from joining if game is in session
     if (game) {
       game.addPlayer(sessionId, socket.id, nickname);
       fn({ success: true });
-      io.of(`/${gameId}`).emit('player update', game.getBasicPlayersData());
     } else {
       fn({ success: false });
     }
@@ -63,8 +63,11 @@ nsp.on('connection', (socket) => {
         game.players[sessionId].socketId = socket.id;
       }
       socket.emit('200');
-      socket.nsp.emit('player update', game.getBasicPlayersData());
     }
+
+    socket.on('player loaded', () => {
+      socket.nsp.emit('player update', gameList.games[gameId].getBasicPlayersData());
+    });
 
     socket.on('start game', (fn) => {
       // TODO: Customize logic
