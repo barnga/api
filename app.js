@@ -31,7 +31,7 @@ io.on('connection', (socket) => {
     fn({ success: true, gameId });
   });
 
-  socket.on('join game', (values, fn) => {
+  socket.on('join game', (values, emitFn) => {
     const { gameId, nickname } = values;
     const game = gameList.games[gameId];
     const { sessionId } = socket.handshake.query;
@@ -39,9 +39,9 @@ io.on('connection', (socket) => {
     // TODO: Stop player from joining if game is in session
     if (game) {
       game.addPlayer(sessionId, socket.id, nickname);
-      fn({ success: true });
+      emitFn({ success: true });
     } else {
-      fn({ success: false });
+      emitFn({ success: false });
     }
   });
 
@@ -69,10 +69,10 @@ nsp.on('connection', (socket) => {
       socket.nsp.emit('player update', gameList.games[gameId].getBasicPlayersData());
     });
 
-    socket.on('start game', (fn) => {
+    socket.on('start game', (emitFn) => {
       // TODO: Customize logic
       const hasMinimumPlayers = Object.keys(game.players).length > 2;
-      fn({ hasMinimumPlayers });
+      emitFn({ hasMinimumPlayers });
 
       if (hasMinimumPlayers) {
         game.createRooms(2)
@@ -88,13 +88,27 @@ nsp.on('connection', (socket) => {
       }
     });
 
-    socket.on('joined room', (fn) => {
-      const roomId = game.players[socket.handshake.query.sessionId].room;
+    socket.on('joined room', (emitFn) => {
+      const roomId = game.players[sessionId].room;
       const roomNumber = Object.keys(game.rooms).indexOf(roomId) + 1;
-      fn({ roomNumber });
+      emitFn({ roomNumber });
+    });
+
+    socket.on('get rooms', (emitFn) => {
+      const rooms = Object.entries(game.rooms).map((room) => {
+        const [roomId, players] = room;
+        const playerObjects = players.map((sessionId) => ({
+          sessionId,
+          nickname: game.players[sessionId].nickname
+        }));
+        return { roomId, players: playerObjects };
+      });
+      emitFn({ rooms });
     });
 
     socket.on('new message', (message) => {
+      // TODO: Send sessionId (defined above) to know which player it is
+      // TODO: Make roomId less confusing
       const roomId = Object.keys(socket.rooms)[1];
       socket.nsp.to(roomId).emit('messages update', message);
     });
