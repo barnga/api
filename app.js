@@ -70,41 +70,34 @@ nsp.on('connection', (socket) => {
     });
 
     socket.on('start game', (emitFn) => {
-      // TODO: Customize logic
+      // TODO: Customize player number and rulesheet count
       const hasMinimumPlayers = Object.keys(game.players).length > 2;
       emitFn({ hasMinimumPlayers });
 
       if (hasMinimumPlayers) {
         game.createRooms(2)
           .then(() => {
+            // TODO: Optimize code
             Object.entries(game.rooms).forEach((room) => {
-              const [roomId, players] = room;
-              players.forEach((playerId) => game.players[playerId].joinRoom(roomId));
-              const socketIds = players.map((playerId) => game.players[playerId].socketId);
+              const [roomId, roomData] = room;
+              roomData.players.forEach((playerId) => game.players[playerId].joinRoom(roomId));
+              const socketIds = roomData.players.map((playerId) => game.players[playerId].socketId);
               socketIds.forEach((socketId) => socket.nsp.connected[socketId].join(roomId));
             });
-          });
-        socket.nsp.emit('game started');
+          })
+          .then(() => game.assignRulesheets(9))
+          .then(() => socket.nsp.emit('game started'));
       }
     });
 
     socket.on('joined room', (emitFn) => {
       const roomId = game.players[sessionId].room;
       const roomNumber = Object.keys(game.rooms).indexOf(roomId) + 1;
-      emitFn({ roomNumber });
+      const rulesheetId = game.rooms[roomId].rulesheetId;
+      emitFn({ roomNumber, rulesheetId });
     });
 
-    socket.on('get rooms', (emitFn) => {
-      const rooms = Object.entries(game.rooms).map((room) => {
-        const [roomId, players] = room;
-        const playerObjects = players.map((sessionId) => ({
-          sessionId,
-          nickname: game.players[sessionId].nickname
-        }));
-        return { roomId, players: playerObjects };
-      });
-      emitFn({ rooms });
-    });
+    socket.on('get rooms', (emitFn) => emitFn({ rooms: game.getBasicRoomsData() }));
 
     socket.on('new message', (message) => {
       // TODO: Send sessionId (defined above) to know which player it is
@@ -114,6 +107,7 @@ nsp.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
+      // TODO: Close game if teacher disconnects
       if (sessionId) {
         game.deletePlayer(sessionId);
         socket.nsp.emit('player update', game.getBasicPlayersData());

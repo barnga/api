@@ -36,7 +36,8 @@ module.exports = class Game {
 
       for (let i = 0; i < roomCount; i++) {
         const roomId = generateId(15);
-        this.rooms[roomId] = parsedIds[i];
+        this.rooms[roomId] = {};
+        this.rooms[roomId].players = parsedIds[i];
       }
 
       resolve();
@@ -44,6 +45,23 @@ module.exports = class Game {
   }
 
   getBasicRoomsData() {
+    return Object.entries(this.rooms).map((room) => {
+      const [roomId, roomData] = room;
+      const playerObjects = roomData.players.map((sessionId) => ({
+        sessionId,
+        nickname: this.players[sessionId].nickname
+      }));
 
+      return { roomId, players: playerObjects };
+    });
+  }
+
+  assignRulesheets(rulesheetCount) {
+    return new Promise((resolve) => {
+      Object.keys(this.rooms).map((roomId) => {
+        this.rooms[roomId].rulesheetId = Math.floor(Math.random() * rulesheetCount);
+      });
+      resolve();
+    });
   }
 };
