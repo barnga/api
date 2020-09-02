@@ -85,7 +85,7 @@ nsp.on('connection', (socket) => {
               socketIds.forEach((socketId) => socket.nsp.connected[socketId].join(roomId));
             });
           })
-          .then(() => game.assignRulesheets(9))
+          .then(() => game.assignRulesheets(3))
           .then(() => socket.nsp.emit('game started'));
       }
     });

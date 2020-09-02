@@ -58,9 +58,25 @@ module.exports = class Game {
 
   assignRulesheets(rulesheetCount) {
     return new Promise((resolve) => {
-      Object.keys(this.rooms).map((roomId) => {
-        this.rooms[roomId].rulesheetId = Math.floor(Math.random() * rulesheetCount);
+      const rooms = Object.keys(this.rooms);
+
+      rooms.map((roomId, idx) => {
+        if (rooms.length === 2 && !rooms[idx + 1]) {
+          do {
+            this.rooms[roomId].rulesheetId = Math.floor(Math.random() * rulesheetCount);
+          } while (this.rooms[roomId].rulesheetId === this.rooms[rooms[0]].rulesheetId);
+        } else {
+          this.rooms[roomId].rulesheetId = Math.floor(Math.random() * rulesheetCount);
+        }
       });
+
+      resolve();
+    });
+  }
+
+  dealCards() {
+    return new Promise((resolve) => {
+
       resolve();
     });
   }
