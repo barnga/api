@@ -74,8 +74,21 @@ module.exports = class Game {
     });
   }
 
-  dealCards() {
+  dealCards(range) {
     return new Promise((resolve) => {
+      Object.keys(this.rooms).map((roomId) => {
+        const deck = ['CLUB', 'HEART', 'DIAMOND', 'SPADE'].map((suit) => {
+          const fullSuit = [];
+          for (let i = 1; i < range + 1; i++) {
+            fullSuit.push(`${suit}-${i}`);
+          }
+          return fullSuit;
+        });
+
+        const players = this.rooms[roomId].players;
+        const chunkedDeck = chunkArray(shuffleArray(deck.flat()), Math.floor(deck.flat().length / players.length));
+        players.map((sessionId, idx) => this.players[sessionId].assignHand(chunkedDeck[idx]));
+      });
 
       resolve();
     });

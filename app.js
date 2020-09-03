@@ -66,7 +66,7 @@ nsp.on('connection', (socket) => {
     }
 
     socket.on('player loaded', () => {
-      socket.nsp.emit('player update', gameList.games[gameId].getBasicPlayersData());
+      socket.nsp.emit('player update', game.getBasicPlayersData());
     });
 
     socket.on('start game', (emitFn) => {
@@ -86,15 +86,16 @@ nsp.on('connection', (socket) => {
             });
           })
           .then(() => game.assignRulesheets(3))
+          .then(() => game.dealCards(7))
           .then(() => socket.nsp.emit('game started'));
       }
     });
 
     socket.on('joined room', (emitFn) => {
-      const roomId = game.players[sessionId].room;
-      const roomNumber = Object.keys(game.rooms).indexOf(roomId) + 1;
-      const rulesheetId = game.rooms[roomId].rulesheetId;
-      emitFn({ roomNumber, rulesheetId });
+      const { room, hand } = game.players[sessionId];
+      const roomNumber = Object.keys(game.rooms).indexOf(room) + 1;
+      const rulesheetId = game.rooms[room].rulesheetId;
+      emitFn({ roomNumber, rulesheetId, hand });
     });
 
     socket.on('get rooms', (emitFn) => emitFn({ rooms: game.getBasicRoomsData() }));

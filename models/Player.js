@@ -4,6 +4,7 @@ module.exports = class Player {
     this.socketId = socketId;
     this.nickname = nickname;
     this.room = '';
+    this.hand = [];
   }
 
   getBasicData() {
@@ -12,5 +13,9 @@ module.exports = class Player {
 
   joinRoom(roomId) {
     this.room = roomId;
+  }
+
+  assignHand(hand) {
+    this.hand = hand;
   }
 };
