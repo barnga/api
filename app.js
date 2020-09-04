@@ -71,7 +71,7 @@ nsp.on('connection', (socket) => {
 
     socket.on('start game', (emitFn) => {
       // TODO: Customize player number and rulesheet count
-      const hasMinimumPlayers = Object.keys(game.players).length > 2;
+      const hasMinimumPlayers = Object.keys(game.players).length > 0;
       emitFn({ hasMinimumPlayers });
 
       if (hasMinimumPlayers) {
@@ -106,6 +106,13 @@ nsp.on('connection', (socket) => {
       const roomId = Object.keys(socket.rooms)[1];
       socket.nsp.to(roomId).emit('messages update', message);
     });
+
+    socket.on('strokes update', (stroke) => {
+      // TODO: Send sessionId (defined above) to know which player it is
+      // TODO: Make roomId less confusing
+      const roomId = Object.keys(socket.rooms)[1];
+      socket.nsp.to(roomId).emit('strokes update', stroke);
+    })
 
     socket.on('disconnect', () => {
       // TODO: Close game if teacher disconnects
