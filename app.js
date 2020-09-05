@@ -73,28 +73,25 @@ nsp.on('connection', (socket) => {
       // TODO: Customize player number and rulesheet count
       const hasMinimumPlayers = Object.keys(game.players).length > 0;
       emitFn({ hasMinimumPlayers });
-
       if (hasMinimumPlayers) {
         game.createRooms(2)
           .then(() => {
-            // TODO: Optimize code
-            Object.entries(game.rooms).forEach((room) => {
-              const [roomId, roomData] = room;
-              roomData.players.forEach((playerId) => game.players[playerId].joinRoom(roomId));
-              const socketIds = roomData.players.map((playerId) => game.players[playerId].socketId);
-              socketIds.forEach((socketId) => socket.nsp.connected[socketId].join(roomId));
+            Object.keys(game.rooms).forEach((roomId) => {
+              Object.keys(game.rooms[roomId].players).forEach((playerId) => {
+                game.players[playerId].joinRoom(roomId);
+                socket.nsp.connected[game.players[playerId].socketId].join(roomId);
+              });
             });
           })
           .then(() => game.assignRulesheets(3))
-          .then(() => game.dealCards(7))
+          .then(() => game.dealCardsToAllRooms(7))
           .then(() => socket.nsp.emit('game started'));
       }
     });
 
     socket.on('joined room', (emitFn) => {
       const { room, hand } = game.players[sessionId];
-      const roomNumber = Object.keys(game.rooms).indexOf(room) + 1;
-      const rulesheetId = game.rooms[room].rulesheetId;
+      const { roomNumber, rulesheetId } = game.rooms[room];
       emitFn({ roomNumber, rulesheetId, hand });
     });
 
@@ -112,7 +109,13 @@ nsp.on('connection', (socket) => {
       // TODO: Make roomId less confusing
       const roomId = Object.keys(socket.rooms)[1];
       socket.nsp.to(roomId).emit('strokes update', stroke);
-    })
+    });
+
+    socket.on('play card', (card) => {
+      // const roomId = Object.keys(socket.rooms)[1];
+      // game.rooms[roomId].playCard(card);
+      // socket.nsp.to(roomId).emit('play card update', game.rooms.playedCards);
+    });
 
     socket.on('disconnect', () => {
       // TODO: Close game if teacher disconnects
