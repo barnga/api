@@ -112,7 +112,7 @@ nsp.on('connection', (socket) => {
     socket.on('play card', (card) => {
       const roomId = Object.keys(socket.rooms)[1];
       game.rooms[roomId].playCard(sessionId, card);
-      socket.nsp.to(roomId).emit('play card update', game.rooms[roomId].getBasicData() );
+      socket.nsp.to(roomId).emit('game update', game.rooms[roomId].getBasicData() );
     });
 
     socket.on('disconnect', () => {
