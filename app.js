@@ -91,8 +91,8 @@ nsp.on('connection', (socket) => {
 
     socket.on('joined room', (emitFn) => {
       const { room, hand } = game.players[sessionId];
-      const { roomNumber, rulesheetId } = game.rooms[room];
-      emitFn({ roomNumber, rulesheetId, hand });
+      const { roomNumber, rulesheetId, turn } = game.rooms[room];
+      emitFn({ roomNumber, rulesheetId, hand, turn });
     });
 
     socket.on('get rooms', (emitFn) => emitFn({ rooms: game.getBasicRoomsData() }));
@@ -112,7 +112,7 @@ nsp.on('connection', (socket) => {
     socket.on('play card', (card) => {
       const roomId = Object.keys(socket.rooms)[1];
       game.rooms[roomId].playCard(sessionId, card);
-      socket.nsp.to(roomId).emit('game update', game.rooms[roomId].getBasicData() );
+      socket.nsp.to(roomId).emit('game update', game.rooms[roomId].getBasicData());
     });
 
     socket.on('disconnect', () => {

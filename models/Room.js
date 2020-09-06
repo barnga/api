@@ -2,12 +2,13 @@ const chunkArray = require('../helpers/chunkArray');
 const shuffleArray = require('../helpers/shuffleArray');
 
 module.exports = class Room {
-  constructor(roomId, roomNumber, players) {
+  constructor(roomId, roomNumber, players, turn) {
     this.roomId = roomId;
     this.roomNumber = roomNumber;
     this.players = players;
     this.playedCards = [];
     this.rulesheetId = null;
+    this.turn = turn;
   }
 
   setRulesheet(rulesheetId) {
@@ -33,9 +34,16 @@ module.exports = class Room {
     });
   }
 
+  setTurn(playerId) {
+    const playerKeys = Object.keys(this.players);
+    const newIndex = (playerKeys.indexOf(playerId) + 1) % playerKeys.length;
+    this.turn = playerKeys[newIndex];
+  }
+
   playCard(playerId, playedCard) {
-    this.playedCards.push(playedCard);
+    this.playedCards.push({ playerId, playedCard });
     this.players[playerId].hand = this.players[playerId].hand.filter((card) => card !== playedCard);
+    this.setTurn(playerId);
   }
 
   clearPlayedCards() {
@@ -49,6 +57,7 @@ module.exports = class Room {
       players: this.players,
       playedCards: this.playedCards,
       rulesheetId: this.rulesheetId,
+      turn: this.turn,
     };
   }
 };
