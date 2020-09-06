@@ -105,16 +105,14 @@ nsp.on('connection', (socket) => {
     });
 
     socket.on('strokes update', (stroke) => {
-      // TODO: Send sessionId (defined above) to know which player it is
-      // TODO: Make roomId less confusing
       const roomId = Object.keys(socket.rooms)[1];
       socket.nsp.to(roomId).emit('strokes update', stroke);
     });
 
     socket.on('play card', (card) => {
-      // const roomId = Object.keys(socket.rooms)[1];
-      // game.rooms[roomId].playCard(card);
-      // socket.nsp.to(roomId).emit('play card update', game.rooms.playedCards);
+      const roomId = Object.keys(socket.rooms)[1];
+      game.rooms[roomId].playCard(sessionId, card);
+      socket.nsp.to(roomId).emit('play card update', game.rooms[roomId].getBasicData() );
     });
 
     socket.on('disconnect', () => {

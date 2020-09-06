@@ -33,8 +33,9 @@ module.exports = class Room {
     });
   }
 
-  playCard(card) {
-    this.playedCards.push(card);
+  playCard(playerId, playedCard) {
+    this.playedCards.push(playedCard);
+    this.players[playerId].hand = this.players[playerId].hand.filter((card) => card !== playedCard);
   }
 
   clearPlayedCards() {
@@ -42,15 +43,12 @@ module.exports = class Room {
   }
 
   getBasicData() {
-    const playerObjects = Object.keys(this.players).map((sessionId) => ({
-      sessionId,
-      nickname: this.players[sessionId].nickname
-    }));
-
     return {
-      roomNumber: this.roomNumber,
       roomId: this.roomId,
-      players: playerObjects
+      roomNumber: this.roomNumber,
+      players: this.players,
+      playedCards: this.playedCards,
+      rulesheetId: this.rulesheetId,
     };
   }
 };
