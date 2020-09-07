@@ -39,10 +39,14 @@ module.exports = class Game {
         const roomId = generateId(15);
         const roomNumber = i + 1;
         const startingPlayer = parsedIds[i][Math.floor(Math.random() * parsedIds[i].length)];
-        const randomPlayers = {};
-        parsedIds[i].forEach((parsedId) => randomPlayers[parsedId] = this.players[parsedId]);
+        const roomPlayers = {};
+        const leaderboard = {};
+        parsedIds[i].forEach((parsedId) => {
+          roomPlayers[parsedId] = this.players[parsedId];
+          leaderboard[parsedId] = 0;
+        });
 
-        this.rooms[roomId] = new Room(roomId, roomNumber, randomPlayers, startingPlayer);
+        this.rooms[roomId] = new Room(roomId, roomNumber, roomPlayers, startingPlayer, leaderboard);
       }
 
       resolve();

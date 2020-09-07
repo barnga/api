@@ -1,14 +1,17 @@
 const chunkArray = require('../helpers/chunkArray');
 const shuffleArray = require('../helpers/shuffleArray');
+const getSuit = require('../helpers/getSuit');
+const getCardNumber = require('../helpers/getCardNumber');
 
 module.exports = class Room {
-  constructor(roomId, roomNumber, players, turn) {
+  constructor(roomId, roomNumber, players, turn, leaderboard) {
     this.roomId = roomId;
     this.roomNumber = roomNumber;
     this.players = players;
     this.playedCards = [];
     this.rulesheetId = null;
     this.turn = turn;
+    this.leaderboard = leaderboard;
   }
 
   setRulesheet(rulesheetId) {
@@ -41,13 +44,63 @@ module.exports = class Room {
   }
 
   playCard(playerId, playedCard) {
-    this.playedCards.push({ playerId, playedCard });
-    this.players[playerId].hand = this.players[playerId].hand.filter((card) => card !== playedCard);
-    this.setTurn(playerId);
+    return new Promise((resolve) => {
+      this.playedCards.push({ playerId, playedCard });
+      this.players[playerId].hand = this.players[playerId].hand.filter((card) => card !== playedCard);
+      if (this.playedCards.length === Object.keys(this.players).length) {
+        this.endRound()
+          .then(() => {
+            this.clearPlayedCards();
+            resolve();
+          });
+      } else {
+        this.setTurn(playerId);
+        resolve();
+      }
+    });
   }
 
   clearPlayedCards() {
     this.playedCards = [];
+  }
+
+  endRound() {
+    const getWinningPlayer = (cards) => {
+      const highestPlay = cards.reduce((lastBestPlay, currentPlay) => {
+        if (getCardNumber(lastBestPlay.playedCard) > getCardNumber(currentPlay.playedCard)) {
+          return lastBestPlay;
+        }
+        return currentPlay;
+      });
+      const allHighestPlays = cards.filter((card) => card.playedCard === highestPlay.playedCard);
+      return allHighestPlays[Math.floor(Math.random() * allHighestPlays.length)].playerId;
+    };
+
+    return new Promise((resolve) => {
+      if (this.rulesheetId !== 2) {
+        const trumpSuit = ['spades', 'diamonds'][this.rulesheetId];
+        const trumpCards = this.playedCards
+          .filter((cardData) => getSuit(cardData.playedCard) === trumpSuit);
+
+        if (trumpCards.length > 0) {
+          this.updatePlayerScore(getWinningPlayer(trumpCards));
+        } else {
+          const cardsOfFirstSuit = this.playedCards
+            .filter((cardData) => getSuit(cardData.playedCard) === getSuit(this.playedCards[0].playedCard));
+          this.updatePlayerScore(getWinningPlayer(cardsOfFirstSuit));
+        }
+      } else {
+        const cardsOfFirstSuit = this.playedCards
+          .filter((cardData) => getSuit(cardData.playedCard) === getSuit(this.playedCards[0].playedCard));
+        this.updatePlayerScore(getWinningPlayer(cardsOfFirstSuit));
+      }
+
+      resolve();
+    });
+  }
+
+  updatePlayerScore(playerId) {
+    this.leaderboard[playerId] = this.leaderboard[playerId] + 1;
   }
 
   getBasicData() {
@@ -58,6 +111,7 @@ module.exports = class Room {
       playedCards: this.playedCards,
       rulesheetId: this.rulesheetId,
       turn: this.turn,
+      leaderboard: this.leaderboard,
     };
   }
 };
