@@ -43,7 +43,10 @@ module.exports = class Game {
         const leaderboard = {};
         parsedIds[i].forEach((parsedId) => {
           roomPlayers[parsedId] = this.players[parsedId];
-          leaderboard[parsedId] = 0;
+          leaderboard[parsedId] = {
+            nickname: this.players[parsedId].nickname,
+            score: 0
+          };
         });
 
         this.rooms[roomId] = new Room(roomId, roomNumber, roomPlayers, startingPlayer, leaderboard);

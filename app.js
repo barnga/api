@@ -61,6 +61,8 @@ nsp.on('connection', (socket) => {
     } else {
       if (game.players[sessionId]) {
         game.players[sessionId].socketId = socket.id;
+      } else if (game.teachers[sessionId]) {
+        game.teachers[sessionId].socketId = socket.id;
       }
       socket.emit('200');
     }

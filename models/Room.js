@@ -50,6 +50,7 @@ module.exports = class Room {
       if (this.playedCards.length === Object.keys(this.players).length) {
         this.endRound()
           .then(() => {
+            // TODO: Add delay for players to view winner of game
             this.clearPlayedCards();
             resolve();
           });
@@ -78,7 +79,7 @@ module.exports = class Room {
 
     return new Promise((resolve) => {
       if (this.rulesheetId !== 2) {
-        const trumpSuit = ['spades', 'diamonds'][this.rulesheetId];
+        const trumpSuit = ['SPADE', 'DIAMOND'][this.rulesheetId];
         const trumpCards = this.playedCards
           .filter((cardData) => getSuit(cardData.playedCard) === trumpSuit);
 
@@ -100,7 +101,12 @@ module.exports = class Room {
   }
 
   updatePlayerScore(playerId) {
-    this.leaderboard[playerId] = this.leaderboard[playerId] + 1;
+    const leaderboardData = this.leaderboard[playerId];
+
+    this.leaderboard[playerId] = {
+      ...leaderboardData,
+      score: leaderboardData.score + 1,
+    };
   }
 
   getBasicData() {
