@@ -62,6 +62,8 @@ nsp.on('connection', (socket) => {
     } else {
       if (game.players[sessionId]) {
         game.players[sessionId].socketId = socket.id;
+      } else if (game.teachers[sessionId]) {
+        game.teachers[sessionId].socketId = socket.id;
       }
       socket.emit('200');
     }
@@ -92,8 +94,8 @@ nsp.on('connection', (socket) => {
 
     socket.on('joined room', (emitFn) => {
       const { room, hand } = game.players[sessionId];
-      const { roomNumber, rulesheetId } = game.rooms[room];
-      emitFn({ roomNumber, rulesheetId, hand });
+      const roomData = game.rooms[room].getBasicData();
+      emitFn({ hand, ...roomData });
     });
 
     socket.on('get rooms', (emitFn) => emitFn({ rooms: game.getBasicRoomsData() }));
@@ -159,14 +161,18 @@ nsp.on('connection', (socket) => {
 
     socket.on('play card', (card) => {
       const roomId = Object.keys(socket.rooms)[1];
-      game.rooms[roomId].playCard(sessionId, card);
-      socket.nsp.to(roomId).emit('play card update', game.rooms[roomId].getBasicData() );
+      game.rooms[roomId].playCard(sessionId, card)
+        .then(() => {
+          socket.nsp.to(roomId).emit('game update', game.rooms[roomId].getBasicData());
+        });
     });
 
     socket.on('disconnect', () => {
       // TODO: Close game if teacher disconnects
+      // TODO: Remove player from game AND room if disconnect (otherwise round will never end)
       if (sessionId) {
         game.deletePlayer(sessionId);
+        const roomId = Object.keys(socket.rooms)[1];
         socket.nsp.emit('player update', game.getBasicPlayersData());
       }
       if (Object.keys(socket.nsp.connected).length === 0) {

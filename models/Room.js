@@ -1,13 +1,17 @@
 const chunkArray = require('../helpers/chunkArray');
 const shuffleArray = require('../helpers/shuffleArray');
+const getSuit = require('../helpers/getSuit');
+const getCardNumber = require('../helpers/getCardNumber');
 
 module.exports = class Room {
-  constructor(roomId, roomNumber, players) {
+  constructor(roomId, roomNumber, players, turn, leaderboard) {
     this.roomId = roomId;
     this.roomNumber = roomNumber;
     this.players = players;
     this.playedCards = [];
     this.rulesheetId = null;
+    this.turn = turn;
+    this.leaderboard = leaderboard;
   }
 
   setRulesheet(rulesheetId) {
@@ -33,13 +37,76 @@ module.exports = class Room {
     });
   }
 
+  setTurn(playerId) {
+    const playerKeys = Object.keys(this.players);
+    const newIndex = (playerKeys.indexOf(playerId) + 1) % playerKeys.length;
+    this.turn = playerKeys[newIndex];
+  }
+
   playCard(playerId, playedCard) {
-    this.playedCards.push(playedCard);
-    this.players[playerId].hand = this.players[playerId].hand.filter((card) => card !== playedCard);
+    return new Promise((resolve) => {
+      this.playedCards.push({ playerId, playedCard });
+      this.players[playerId].hand = this.players[playerId].hand.filter((card) => card !== playedCard);
+      if (this.playedCards.length === Object.keys(this.players).length) {
+        this.endRound()
+          .then(() => {
+            // TODO: Add delay for players to view winner of game
+            this.clearPlayedCards();
+            resolve();
+          });
+      } else {
+        this.setTurn(playerId);
+        resolve();
+      }
+    });
   }
 
   clearPlayedCards() {
     this.playedCards = [];
+  }
+
+  endRound() {
+    const getWinningPlayer = (cards) => {
+      const highestPlay = cards.reduce((lastBestPlay, currentPlay) => {
+        if (getCardNumber(lastBestPlay.playedCard) > getCardNumber(currentPlay.playedCard)) {
+          return lastBestPlay;
+        }
+        return currentPlay;
+      });
+      const allHighestPlays = cards.filter((card) => card.playedCard === highestPlay.playedCard);
+      return allHighestPlays[Math.floor(Math.random() * allHighestPlays.length)].playerId;
+    };
+
+    return new Promise((resolve) => {
+      if (this.rulesheetId !== 2) {
+        const trumpSuit = ['SPADE', 'DIAMOND'][this.rulesheetId];
+        const trumpCards = this.playedCards
+          .filter((cardData) => getSuit(cardData.playedCard) === trumpSuit);
+
+        if (trumpCards.length > 0) {
+          this.updatePlayerScore(getWinningPlayer(trumpCards));
+        } else {
+          const cardsOfFirstSuit = this.playedCards
+            .filter((cardData) => getSuit(cardData.playedCard) === getSuit(this.playedCards[0].playedCard));
+          this.updatePlayerScore(getWinningPlayer(cardsOfFirstSuit));
+        }
+      } else {
+        const cardsOfFirstSuit = this.playedCards
+          .filter((cardData) => getSuit(cardData.playedCard) === getSuit(this.playedCards[0].playedCard));
+        this.updatePlayerScore(getWinningPlayer(cardsOfFirstSuit));
+      }
+
+      resolve();
+    });
+  }
+
+  updatePlayerScore(playerId) {
+    const leaderboardData = this.leaderboard[playerId];
+
+    this.leaderboard[playerId] = {
+      ...leaderboardData,
+      score: leaderboardData.score + 1,
+    };
   }
 
   getBasicData() {
@@ -49,6 +116,8 @@ module.exports = class Room {
       players: this.players,
       playedCards: this.playedCards,
       rulesheetId: this.rulesheetId,
+      turn: this.turn,
+      leaderboard: this.leaderboard,
     };
   }
 };
