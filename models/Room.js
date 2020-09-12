@@ -15,6 +15,7 @@ module.exports = class Room {
     this.roundSettings = {
       disablePlayCard: false,
       showWinner: false,
+      // winner: null,
     };
   }
 
@@ -122,6 +123,7 @@ module.exports = class Room {
       rulesheetId: this.rulesheetId,
       turn: this.turn,
       leaderboard: this.leaderboard,
+      roundSettings: this.roundSettings,
     };
   }
 };

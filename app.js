@@ -162,24 +162,26 @@ nsp.on('connection', (socket) => {
     socket.on('play card', (card) => {
       const roomId = Object.keys(socket.rooms)[1];
       const room = game.rooms[roomId];
+      const emitGameUpdate = () => socket.nsp.to(roomId).emit('game update', room.getBasicData());
 
       room.playCard(sessionId, card)
         .then((isRoundEnd) => {
-          socket.nsp.to(roomId).emit('game update', room.getBasicData());
+          emitGameUpdate();
 
           if (isRoundEnd) {
             room.roundSettings = {
               disablePlayCard: true,
               showWinner: true,
             };
+            emitGameUpdate();
 
             setTimeout(() => {
               room.clearPlayedCards();
-              socket.nsp.to(roomId).emit('game update', room.getBasicData());
               room.roundSettings = {
                 disablePlayCard: false,
                 showWinner: false,
               };
+              emitGameUpdate();
             }, 5000);
           }
         });
