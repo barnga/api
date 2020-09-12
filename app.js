@@ -155,8 +155,15 @@ nsp.on('connection', (socket) => {
     });
 
     socket.on('strokes update', (stroke) => {
+      // Send to room
       const roomId = Object.keys(socket.rooms)[1];
       socket.nsp.to(roomId).emit('strokes update', stroke);
+
+      // Send to teacher
+      socket.nsp.emit('strokes update room', {
+        roomId: roomId,
+        stroke: stroke,
+      });
     });
 
     socket.on('play card', (card) => {
