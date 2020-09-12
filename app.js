@@ -107,7 +107,7 @@ nsp.on('connection', (socket) => {
         body: message,
         sender: senderName,
         global: false,
-      }
+      };
       socket.nsp.to(roomId).emit('messages update', messageData);
 
       // Send to teacher
@@ -152,7 +152,7 @@ nsp.on('connection', (socket) => {
         roomId: data.roomId,
         message: message,
       });
-    })
+    });
 
     socket.on('strokes update', (stroke) => {
       // Send to room
@@ -168,9 +168,32 @@ nsp.on('connection', (socket) => {
 
     socket.on('play card', (card) => {
       const roomId = Object.keys(socket.rooms)[1];
-      game.rooms[roomId].playCard(sessionId, card)
-        .then(() => {
-          socket.nsp.to(roomId).emit('game update', game.rooms[roomId].getBasicData());
+      const room = game.rooms[roomId];
+      const emitGameUpdate = () => socket.nsp.to(roomId).emit('game update', room.getBasicData());
+
+      room.playCard(sessionId, card)
+        .then((isRoundEnd) => {
+          emitGameUpdate();
+
+          if (isRoundEnd) {
+            room.roundSettings = {
+              ...room.roundSettings,
+              disablePlayCard: true,
+              showWinner: true,
+            };
+            emitGameUpdate();
+
+            setTimeout(() => {
+              room.clearPlayedCards();
+              room.setPlayersWithCards();
+              room.roundSettings = {
+                ...room.roundSettings,
+                disablePlayCard: false,
+                showWinner: false,
+              };
+              emitGameUpdate();
+            }, 5000);
+          }
         });
     });
 
