@@ -107,7 +107,7 @@ nsp.on('connection', (socket) => {
         body: message,
         sender: senderName,
         global: false,
-      }
+      };
       socket.nsp.to(roomId).emit('messages update', messageData);
 
       // Send to teacher
@@ -178,6 +178,7 @@ nsp.on('connection', (socket) => {
 
             setTimeout(() => {
               room.clearPlayedCards();
+              room.setPlayersWithCards();
               room.roundSettings = {
                 ...room.roundSettings,
                 disablePlayCard: false,

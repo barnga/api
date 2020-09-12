@@ -16,6 +16,7 @@ module.exports = class Room {
       disablePlayCard: false,
       showWinner: false,
       winner: null,
+      playersWithCards: null,
     };
   }
 
@@ -38,7 +39,16 @@ module.exports = class Room {
         this.players[sessionId].assignHand(chunkedDeck[idx]);
       });
 
+      this.setPlayersWithCards();
+
       resolve();
+    });
+  }
+
+  setPlayersWithCards() {
+    this.roundSettings.playersWithCards = Object.entries(this.players).filter((player) => {
+      const [, playerData] = player;
+      return playerData.hand.length > 0;
     });
   }
 
@@ -54,7 +64,7 @@ module.exports = class Room {
         this.playedCards.push({ playerId, playedCard });
         this.players[playerId].hand = this.players[playerId].hand.filter((card) => card !== playedCard);
 
-        if (this.playedCards.length === Object.keys(this.players).length) {
+        if (this.playedCards.length === this.roundSettings.playersWithCards.length) {
           this.endRound().then(() => resolve(true));
         } else {
           this.setTurn(playerId);
