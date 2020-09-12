@@ -53,7 +53,7 @@ module.exports = class Room {
   }
 
   setTurn(playerId) {
-    const playerKeys = Object.keys(this.players);
+    const playerKeys = Object.keys(this.players).filter((key) => this.players[key].hand.length > 0);
     const newIndex = (playerKeys.indexOf(playerId) + 1) % playerKeys.length;
     this.turn = playerKeys[newIndex];
   }
@@ -65,7 +65,10 @@ module.exports = class Room {
         this.players[playerId].hand = this.players[playerId].hand.filter((card) => card !== playedCard);
 
         if (this.playedCards.length === this.roundSettings.playersWithCards.length) {
-          this.endRound().then(() => resolve(true));
+          this.endRound().then(() => {
+            this.setTurn(playerId);
+            resolve(true);
+          });
         } else {
           this.setTurn(playerId);
           resolve();

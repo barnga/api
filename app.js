@@ -87,7 +87,7 @@ nsp.on('connection', (socket) => {
             });
           })
           .then(() => game.assignRulesheets(3))
-          .then(() => game.dealCardsToAllRooms(2))
+          .then(() => game.dealCardsToAllRooms(7))
           .then(() => socket.nsp.emit('game started'));
       }
     });
