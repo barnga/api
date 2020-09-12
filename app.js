@@ -26,6 +26,7 @@ io.on('connection', (socket) => {
     const game = new Game(gameId);
     const { sessionId } = socket.handshake.query;
 
+    console.log(socket.id);
     gameList.addGame(game);
     gameList.games[gameId].addTeacher(sessionId, socket.id);
     fn({ success: true, gameId });
@@ -98,11 +99,58 @@ nsp.on('connection', (socket) => {
     socket.on('get rooms', (emitFn) => emitFn({ rooms: game.getBasicRoomsData() }));
 
     socket.on('new message', (message) => {
-      // TODO: Send sessionId (defined above) to know which player it is
-      // TODO: Make roomId less confusing
       const roomId = Object.keys(socket.rooms)[1];
-      socket.nsp.to(roomId).emit('messages update', message);
+      const senderName = game.players[sessionId].nickname || 'Anonymous';
+      const messageData = {
+        body: message,
+        sender: senderName,
+        global: false,
+      }
+      socket.nsp.to(roomId).emit('messages update', messageData);
+
+      // Send to teacher
+      socket.nsp.emit('messages update room', {
+        roomId: roomId,
+        message: messageData,
+      });
     });
+
+    socket.on('new message global', (message) => {
+      socket.nsp.emit('messages update', {
+        body: message,
+        sender: 'Admin',
+        global: true,
+      });
+
+      // Send to teacher
+      Object.entries(game.rooms).forEach(([roomId, room]) => {
+        socket.nsp.emit('messages update room', {
+          roomId: roomId,
+          message: {
+            body: message,
+            sender: 'Admin',
+            global: true,
+          }
+        });
+      });
+    });
+
+    socket.on('new message room', (data) => {
+      const message = {
+        body: data.message,
+        sender: 'Admin',
+        global: false
+      };
+
+      // Send to room
+      socket.nsp.to(data.roomId).emit('messages update', message);
+
+      // Send to teacher
+      socket.nsp.emit('messages update room', {
+        roomId: data.roomId,
+        message: message,
+      });
+    })
 
     socket.on('strokes update', (stroke) => {
       const roomId = Object.keys(socket.rooms)[1];
