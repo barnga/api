@@ -12,6 +12,7 @@ module.exports = class Room {
     this.rulesheetId = null;
     this.turn = turn;
     this.leaderboard = leaderboard;
+    this.disablePlayCard = false;
   }
 
   setRulesheet(rulesheetId) {
@@ -45,17 +46,17 @@ module.exports = class Room {
 
   playCard(playerId, playedCard) {
     return new Promise((resolve) => {
-      this.playedCards.push({ playerId, playedCard });
-      this.players[playerId].hand = this.players[playerId].hand.filter((card) => card !== playedCard);
-      if (this.playedCards.length === Object.keys(this.players).length) {
-        this.endRound()
-          .then(() => {
-            // TODO: Add delay for players to view winner of game
-            this.clearPlayedCards();
-            resolve();
-          });
+      if (!this.disablePlayCard) {
+        this.playedCards.push({ playerId, playedCard });
+        this.players[playerId].hand = this.players[playerId].hand.filter((card) => card !== playedCard);
+
+        if (this.playedCards.length === Object.keys(this.players).length) {
+          this.endRound().then(() => resolve(true));
+        } else {
+          this.setTurn(playerId);
+          resolve();
+        }
       } else {
-        this.setTurn(playerId);
         resolve();
       }
     });

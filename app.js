@@ -152,7 +152,7 @@ nsp.on('connection', (socket) => {
         roomId: data.roomId,
         message: message,
       });
-    })
+    });
 
     socket.on('strokes update', (stroke) => {
       const roomId = Object.keys(socket.rooms)[1];
@@ -161,9 +161,21 @@ nsp.on('connection', (socket) => {
 
     socket.on('play card', (card) => {
       const roomId = Object.keys(socket.rooms)[1];
-      game.rooms[roomId].playCard(sessionId, card)
-        .then(() => {
-          socket.nsp.to(roomId).emit('game update', game.rooms[roomId].getBasicData());
+      const room = game.rooms[roomId];
+
+      room.playCard(sessionId, card)
+        .then((isRoundEnd) => {
+          socket.nsp.to(roomId).emit('game update', room.getBasicData());
+
+          if (isRoundEnd) {
+            room.disablePlayCard = true;
+
+            setTimeout(() => {
+              room.clearPlayedCards();
+              socket.nsp.to(roomId).emit('game update', room.getBasicData());
+              room.disablePlayCard = false;
+            }, 5000);
+          }
         });
     });
 
