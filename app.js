@@ -168,12 +168,18 @@ nsp.on('connection', (socket) => {
           socket.nsp.to(roomId).emit('game update', room.getBasicData());
 
           if (isRoundEnd) {
-            room.disablePlayCard = true;
+            room.roundSettings = {
+              disablePlayCard: true,
+              showWinner: true,
+            };
 
             setTimeout(() => {
               room.clearPlayedCards();
               socket.nsp.to(roomId).emit('game update', room.getBasicData());
-              room.disablePlayCard = false;
+              room.roundSettings = {
+                disablePlayCard: false,
+                showWinner: false,
+              };
             }, 5000);
           }
         });

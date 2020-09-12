@@ -12,7 +12,10 @@ module.exports = class Room {
     this.rulesheetId = null;
     this.turn = turn;
     this.leaderboard = leaderboard;
-    this.disablePlayCard = false;
+    this.roundSettings = {
+      disablePlayCard: false,
+      showWinner: false,
+    };
   }
 
   setRulesheet(rulesheetId) {
@@ -46,7 +49,7 @@ module.exports = class Room {
 
   playCard(playerId, playedCard) {
     return new Promise((resolve) => {
-      if (!this.disablePlayCard) {
+      if (!this.roundSettings.disablePlayCard) {
         this.playedCards.push({ playerId, playedCard });
         this.players[playerId].hand = this.players[playerId].hand.filter((card) => card !== playedCard);
 
