@@ -15,7 +15,7 @@ module.exports = class Room {
     this.roundSettings = {
       disablePlayCard: false,
       showWinner: false,
-      // winner: null,
+      winner: null,
     };
   }
 
@@ -82,6 +82,14 @@ module.exports = class Room {
       return allHighestPlays[Math.floor(Math.random() * allHighestPlays.length)].playerId;
     };
 
+    const setWinningPlayer = () => {
+      const cardsOfFirstSuit = this.playedCards
+        .filter((cardData) => getSuit(cardData.playedCard) === getSuit(this.playedCards[0].playedCard));
+      const winningPlayer = getWinningPlayer(cardsOfFirstSuit);
+      this.updatePlayerScore(winningPlayer);
+      this.roundSettings = { ...this.roundSettings, winner: winningPlayer };
+    };
+
     return new Promise((resolve) => {
       if (this.rulesheetId !== 2) {
         const trumpSuit = ['SPADE', 'DIAMOND'][this.rulesheetId];
@@ -89,16 +97,14 @@ module.exports = class Room {
           .filter((cardData) => getSuit(cardData.playedCard) === trumpSuit);
 
         if (trumpCards.length > 0) {
+          const winningPlayer = getWinningPlayer(trumpCards);
           this.updatePlayerScore(getWinningPlayer(trumpCards));
+          this.roundSettings = { ...this.roundSettings, winner: winningPlayer };
         } else {
-          const cardsOfFirstSuit = this.playedCards
-            .filter((cardData) => getSuit(cardData.playedCard) === getSuit(this.playedCards[0].playedCard));
-          this.updatePlayerScore(getWinningPlayer(cardsOfFirstSuit));
+          setWinningPlayer();
         }
       } else {
-        const cardsOfFirstSuit = this.playedCards
-          .filter((cardData) => getSuit(cardData.playedCard) === getSuit(this.playedCards[0].playedCard));
-        this.updatePlayerScore(getWinningPlayer(cardsOfFirstSuit));
+        setWinningPlayer();
       }
 
       resolve();

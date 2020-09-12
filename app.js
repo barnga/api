@@ -170,6 +170,7 @@ nsp.on('connection', (socket) => {
 
           if (isRoundEnd) {
             room.roundSettings = {
+              ...room.roundSettings,
               disablePlayCard: true,
               showWinner: true,
             };
@@ -178,6 +179,7 @@ nsp.on('connection', (socket) => {
             setTimeout(() => {
               room.clearPlayedCards();
               room.roundSettings = {
+                ...room.roundSettings,
                 disablePlayCard: false,
                 showWinner: false,
               };
