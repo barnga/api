@@ -197,6 +197,8 @@ nsp.on('connection', (socket) => {
         });
     });
 
+    socket.on('change rooms', () => game.changeRooms());
+
     socket.on('disconnect', () => {
       // TODO: Close game if teacher disconnects
       // TODO: Remove player from game AND room if disconnect (otherwise round will never end)
