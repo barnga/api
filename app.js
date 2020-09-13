@@ -197,7 +197,17 @@ nsp.on('connection', (socket) => {
         });
     });
 
-    socket.on('change rooms', () => game.changeRooms());
+    socket.on('change rooms', () => game.changeRooms().then((updatedRooms) => {
+      // All player sockets must join room they are assigned
+      Object.entries(updatedRooms).forEach((updatedRoom) => {
+        const [roomId, players] = updatedRoom;
+        // Write logic
+        Object.keys(players).forEach((playerId) => {
+          game.players[playerId].joinRoom(roomId);
+          socket.nsp.connected[game.players[playerId].socketId].join(roomId);
+        });
+      });
+    }));
 
     socket.on('disconnect', () => {
       // TODO: Close game if teacher disconnects

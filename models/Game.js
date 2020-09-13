@@ -84,37 +84,48 @@ module.exports = class Game {
   };
 
   changeRooms() {
-    const roomKeys = Object.keys(this.rooms);
-    const emptyRooms = new Map(roomKeys.map((roomId) => [roomId, {}]));
-    const updatedRooms = Object.fromEntries(emptyRooms);
+    return new Promise((resolve) => {
+      const roomKeys = Object.keys(this.rooms);
+      const emptyRooms = new Map(roomKeys.map((roomId) => [roomId, {}]));
+      const updatedRooms = Object.fromEntries(emptyRooms);
 
-    const getMiddlePlayers = (leaderboard) => {
-      if (leaderboard.length > 4) {
-        return leaderboard.slice(1, leaderboard.length - 1);
-      }
-      return leaderboard.slice(1, leaderboard.length);
-    };
+      const getMiddlePlayers = (leaderboard) => {
+        if (leaderboard.length > 4) {
+          return leaderboard.slice(1, leaderboard.length - 1);
+        }
+        return leaderboard.slice(1, leaderboard.length);
+      };
 
-    const getWinningPlayers = (leaderboard) => leaderboard.slice(leaderboard.length > 4 ? -2 : -1);
+      const getWinningPlayers = (leaderboard) => leaderboard.slice(leaderboard.length > 4 ? -2 : -1);
 
-    Object.entries(this.rooms).forEach((room) => {
-      const [roomId, roomData] = room;
-      const sortedLeaderboard = Object.entries(roomData.leaderboard)
-        .sort((playerA, playerB) => playerA[1].score - playerB[1].score);
+      Object.entries(this.rooms).forEach((room) => {
+        const [roomId, roomData] = room;
+        const sortedLeaderboard = Object.entries(roomData.leaderboard)
+          .sort((playerA, playerB) => playerA[1].score - playerB[1].score);
 
-      const [losingPlayer, middlePlayers, winningPlayers] = [
-        sortedLeaderboard[0],
-        getMiddlePlayers(sortedLeaderboard),
-        getWinningPlayers(sortedLeaderboard),
-      ];
+        const [losingPlayer, middlePlayers, winningPlayers] = [
+          sortedLeaderboard[0],
+          getMiddlePlayers(sortedLeaderboard),
+          getWinningPlayers(sortedLeaderboard),
+        ];
 
-      updatedRooms[(roomKeys.indexOf(roomId) - 1) % roomKeys.length][losingPlayer[0]] = losingPlayer[1];
-      middlePlayers.forEach((middlePlayer) => {
-        updatedRooms[roomId][middlePlayer[0]] = middlePlayer[1];
+        updatedRooms[(roomKeys.indexOf(roomId) - 1) % roomKeys.length][losingPlayer[0]] = losingPlayer[1];
+        middlePlayers.forEach((middlePlayer) => {
+          updatedRooms[roomId][middlePlayer[0]] = middlePlayer[1];
+        });
+        winningPlayers.forEach((winningPlayer) => {
+          updatedRooms[(roomKeys.indexOf(roomId) + 1) % roomKeys.length][winningPlayer[0]] = winningPlayer[1];
+        });
       });
-      winningPlayers.forEach((winningPlayer) => {
-        updatedRooms[(roomKeys.indexOf(roomId) + 1) % roomKeys.length][winningPlayer[0]] = winningPlayer[1];
+
+      resolve(updatedRooms);
+    })
+      .then((updatedRooms) => {
+        // Iterate through rooms [roomId, players]
+        Object.entries(updatedRooms).forEach((updatedRoom) => {
+          const [roomId, players] = updatedRoom;
+          this.rooms[roomId].players = players;
+        })
       });
-    });
   }
 };
