@@ -102,8 +102,8 @@ module.exports = class Game {
 
       const [losingPlayer, middlePlayers, winningPlayers] = [
         sortedLeaderboard[0],
-        sortedLeaderboard.slice(sortedLeaderboard.length > 4 ? -2 : -1),
         getMiddlePlayers(),
+        sortedLeaderboard.slice(sortedLeaderboard.length > 4 ? -2 : -1),
       ];
 
       updatedRooms[(roomKeys.indexOf(roomId) - 1) % roomKeys.length][losingPlayer[0]] = losingPlayer[1];
@@ -114,6 +114,5 @@ module.exports = class Game {
         updatedRooms[(roomKeys.indexOf(roomId) + 1) % roomKeys.length][winningPlayer[0]] = winningPlayer[1];
       });
     });
-
   }
 };
