@@ -206,6 +206,7 @@ nsp.on('connection', (socket) => {
           game.players[playerId].joinRoom(roomId);
           socket.nsp.connected[game.players[playerId].socketId].join(roomId);
         });
+        socket.nsp.to(roomId).emit('game update', game.rooms[roomId].getBasicData());
       });
     }));
 

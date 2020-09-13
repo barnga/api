@@ -109,23 +109,26 @@ module.exports = class Game {
           getWinningPlayers(sortedLeaderboard),
         ];
 
-        updatedRooms[(roomKeys.indexOf(roomId) - 1) % roomKeys.length][losingPlayer[0]] = losingPlayer[1];
+        updatedRooms[roomKeys[(roomKeys.indexOf(roomId) + (roomKeys.length - 1)) % roomKeys.length]][losingPlayer[0]] = losingPlayer[1];
         middlePlayers.forEach((middlePlayer) => {
           updatedRooms[roomId][middlePlayer[0]] = middlePlayer[1];
         });
         winningPlayers.forEach((winningPlayer) => {
-          updatedRooms[(roomKeys.indexOf(roomId) + 1) % roomKeys.length][winningPlayer[0]] = winningPlayer[1];
+          updatedRooms[roomKeys[(roomKeys.indexOf(roomId) + 1) % roomKeys.length]][winningPlayer[0]] = winningPlayer[1];
         });
       });
 
+      console.log(updatedRooms);
       resolve(updatedRooms);
     })
       .then((updatedRooms) => {
-        // Iterate through rooms [roomId, players]
-        Object.entries(updatedRooms).forEach((updatedRoom) => {
-          const [roomId, players] = updatedRoom;
-          this.rooms[roomId].players = players;
-        })
+        return new Promise((resolve) => {
+          Object.entries(updatedRooms).forEach((updatedRoom) => {
+            const [roomId, players] = updatedRoom;
+            this.rooms[roomId].players = players;
+          });
+          resolve(updatedRooms);
+        });
       });
   }
 };
