@@ -91,9 +91,9 @@ module.exports = class Game {
 
       const getMiddlePlayers = (leaderboard) => {
         if (leaderboard.length > 4) {
-          return leaderboard.slice(1, leaderboard.length - 1);
+          return leaderboard.slice(1, leaderboard.length - 2);
         }
-        return leaderboard.slice(1, leaderboard.length);
+        return leaderboard.slice(1, leaderboard.length - 1);
       };
 
       const getWinningPlayers = (leaderboard) => leaderboard.slice(leaderboard.length > 4 ? -2 : -1);
@@ -116,9 +116,13 @@ module.exports = class Game {
         winningPlayers.forEach((winningPlayer) => {
           updatedRooms[roomKeys[(roomKeys.indexOf(roomId) + 1) % roomKeys.length]][winningPlayer[0]] = winningPlayer[1];
         });
+
+        console.log('Leaderboard');
+        console.log(sortedLeaderboard);
+        console.log('Updated rooms');
+        console.log(updatedRooms);
       });
 
-      console.log(updatedRooms);
       resolve(updatedRooms);
     })
       .then((updatedRooms) => {

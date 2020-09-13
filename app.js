@@ -57,16 +57,16 @@ nsp.on('connection', (socket) => {
   const { sessionId } = socket.handshake.query;
 
   if (game) {
-    if (!game.teachers[sessionId] && !game.players[sessionId]) {
-      socket.emit('redirect to join');
-    } else {
+    // if (!game.teachers[sessionId] && !game.players[sessionId]) {
+      // socket.emit('redirect to join');
+    // } else {
       if (game.players[sessionId]) {
         game.players[sessionId].socketId = socket.id;
       } else if (game.teachers[sessionId]) {
         game.teachers[sessionId].socketId = socket.id;
       }
       socket.emit('200');
-    }
+    // }
 
     socket.on('player loaded', () => {
       socket.nsp.emit('player update', game.getBasicPlayersData());
@@ -77,7 +77,7 @@ nsp.on('connection', (socket) => {
       const hasMinimumPlayers = Object.keys(game.players).length > 0;
       emitFn({ hasMinimumPlayers });
       if (hasMinimumPlayers) {
-        game.createRooms(2)
+        game.createRooms(3)
           .then(() => {
             Object.keys(game.rooms).forEach((roomId) => {
               Object.keys(game.rooms[roomId].players).forEach((playerId) => {
