@@ -109,30 +109,21 @@ module.exports = class Game {
           getWinningPlayers(sortedLeaderboard),
         ];
 
-        updatedRooms[roomKeys[(roomKeys.indexOf(roomId) + (roomKeys.length - 1)) % roomKeys.length]][losingPlayer[0]] = losingPlayer[1];
+        updatedRooms[roomKeys[(roomKeys.indexOf(roomId) + (roomKeys.length - 1)) % roomKeys.length]][losingPlayer[0]] = this.players[losingPlayer[0]];
         middlePlayers.forEach((middlePlayer) => {
-          updatedRooms[roomId][middlePlayer[0]] = middlePlayer[1];
+          updatedRooms[roomId][middlePlayer[0]] = this.players[middlePlayer[0]];
         });
         winningPlayers.forEach((winningPlayer) => {
-          updatedRooms[roomKeys[(roomKeys.indexOf(roomId) + 1) % roomKeys.length]][winningPlayer[0]] = winningPlayer[1];
+          updatedRooms[roomKeys[(roomKeys.indexOf(roomId) + 1) % roomKeys.length]][winningPlayer[0]] = this.players[winningPlayer[0]];
         });
 
-        console.log('Leaderboard');
-        console.log(sortedLeaderboard);
-        console.log('Updated rooms');
-        console.log(updatedRooms);
+        // console.log('Leaderboard');
+        // console.log(sortedLeaderboard);
+        // console.log('Updated rooms');
+        // console.log(updatedRooms);
       });
 
       resolve(updatedRooms);
-    })
-      .then((updatedRooms) => {
-        return new Promise((resolve) => {
-          Object.entries(updatedRooms).forEach((updatedRoom) => {
-            const [roomId, players] = updatedRoom;
-            this.rooms[roomId].players = players;
-          });
-          resolve(updatedRooms);
-        });
-      });
+    });
   }
 };

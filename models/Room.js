@@ -8,8 +8,9 @@ module.exports = class Room {
     this.roomId = roomId;
     this.roomNumber = roomNumber;
     this.players = players;
-    this.playedCards = [];
     this.rulesheetId = null;
+
+    this.playedCards = [];
     this.turn = turn;
     this.leaderboard = leaderboard;
     this.showVoting = false;
@@ -131,6 +132,20 @@ module.exports = class Room {
     this.leaderboard[playerId] = {
       ...leaderboardData,
       score: leaderboardData.score + 1,
+    };
+  }
+
+  resetRoom() {
+    const playerKeys = Object.keys(this.players);
+    playerKeys.forEach((playerId) => this.players[playerId].hand = []);
+
+    this.turn = playerKeys[Math.random() * playerKeys.length];
+    this.showVoting = false;
+    this.roundSettings = {
+      disablePlayCard: false,
+      showWinner: false,
+      winner: null,
+      playersWithCards: null,
     };
   }
 

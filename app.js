@@ -198,16 +198,26 @@ nsp.on('connection', (socket) => {
     });
 
     socket.on('change rooms', () => game.changeRooms().then((updatedRooms) => {
-      // All player sockets must join room they are assigned
-      Object.entries(updatedRooms).forEach((updatedRoom) => {
-        const [roomId, players] = updatedRoom;
-        // Write logic
-        Object.keys(players).forEach((playerId) => {
-          game.players[playerId].joinRoom(roomId);
-          socket.nsp.connected[game.players[playerId].socketId].join(roomId);
+      return new Promise((resolve) => {
+        Object.entries(updatedRooms).forEach((updatedRoom) => {
+          const [roomId, players] = updatedRoom;
+          game.rooms[roomId].players = players;
+          game.rooms[roomId].resetRoom();
+
+          Object.keys(players).forEach((playerId) => {
+            game.players[playerId].joinRoom(roomId);
+            socket.nsp.connected[game.players[playerId].socketId].join(roomId);
+          });
+
+          resolve();
         });
-        socket.nsp.to(roomId).emit('game update', game.rooms[roomId].getBasicData());
-      });
+      })
+        .then(() => game.dealCardsToAllRooms(7))
+        .then(() => {
+          Object.keys(game.rooms).forEach((roomId) => {
+            socket.nsp.to(roomId).emit('game update', game.rooms[roomId].getBasicData());
+          });
+        });
     }));
 
     socket.on('disconnect', () => {
