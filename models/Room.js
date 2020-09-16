@@ -48,10 +48,8 @@ module.exports = class Room {
   }
 
   setPlayersWithCards() {
-    this.roundSettings.playersWithCards = Object.entries(this.players).filter((player) => {
-      const [, playerData] = player;
-      return playerData.hand.length > 0;
-    });
+    this.roundSettings.playersWithCards = Object.keys(this.players)
+      .filter((playerId) => this.players[playerId].hand.length > 0);
   }
 
   setTurn(playerId) {
@@ -136,17 +134,23 @@ module.exports = class Room {
   }
 
   resetRoom() {
-    const playerKeys = Object.keys(this.players);
-    playerKeys.forEach((playerId) => this.players[playerId].hand = []);
+    return new Promise((resolve) => {
+      const playerKeys = Object.keys(this.players);
+      playerKeys.forEach((playerId) => this.players[playerId].hand = []);
 
-    this.turn = playerKeys[Math.random() * playerKeys.length];
-    this.showVoting = false;
-    this.roundSettings = {
-      disablePlayCard: false,
-      showWinner: false,
-      winner: null,
-      playersWithCards: null,
-    };
+      // TODO: reset leaderboard
+      this.playedCards = [];
+      this.turn = playerKeys[Math.floor(Math.random() * playerKeys.length)];
+      this.showVoting = false;
+      this.roundSettings = {
+        disablePlayCard: false,
+        showWinner: false,
+        winner: null,
+        playersWithCards: null,
+      };
+
+      resolve();
+    });
   }
 
   getBasicData() {

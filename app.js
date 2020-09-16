@@ -26,7 +26,6 @@ io.on('connection', (socket) => {
     const game = new Game(gameId);
     const { sessionId } = socket.handshake.query;
 
-    console.log(socket.id);
     gameList.addGame(game);
     gameList.games[gameId].addTeacher(sessionId, socket.id);
     fn({ success: true, gameId });
@@ -81,8 +80,10 @@ nsp.on('connection', (socket) => {
           .then(() => {
             Object.keys(game.rooms).forEach((roomId) => {
               Object.keys(game.rooms[roomId].players).forEach((playerId) => {
-                game.players[playerId].joinRoom(roomId);
-                socket.nsp.connected[game.players[playerId].socketId].join(roomId);
+                if (socket.nsp.connected[game.players[playerId].socketId]) {
+                  game.players[playerId].joinRoom(roomId);
+                  socket.nsp.connected[game.players[playerId].socketId].join(roomId);
+                }
               });
             });
           })
@@ -198,23 +199,24 @@ nsp.on('connection', (socket) => {
     });
 
     socket.on('change rooms', () => game.changeRooms().then((updatedRooms) => {
+      console.log(updatedRooms);
       return new Promise((resolve) => {
-        Object.entries(updatedRooms).forEach((updatedRoom) => {
+        Object.entries(updatedRooms).forEach((updatedRoom, idx) => {
           const [roomId, players] = updatedRoom;
           game.rooms[roomId].players = players;
-          game.rooms[roomId].resetRoom();
 
           Object.keys(players).forEach((playerId) => {
             game.players[playerId].joinRoom(roomId);
             socket.nsp.connected[game.players[playerId].socketId].join(roomId);
           });
-
-          resolve();
         });
+        resolve();
       })
+        .then(() => game.resetRooms())
         .then(() => game.dealCardsToAllRooms(7))
         .then(() => {
           Object.keys(game.rooms).forEach((roomId) => {
+            console.log(game.rooms[roomId].getBasicData());
             socket.nsp.to(roomId).emit('game update', game.rooms[roomId].getBasicData());
           });
         });
@@ -225,7 +227,6 @@ nsp.on('connection', (socket) => {
       // TODO: Remove player from game AND room if disconnect (otherwise round will never end)
       if (sessionId) {
         game.deletePlayer(sessionId);
-        const roomId = Object.keys(socket.rooms)[1];
         socket.nsp.emit('player update', game.getBasicPlayersData());
       }
       if (Object.keys(socket.nsp.connected).length === 0) {

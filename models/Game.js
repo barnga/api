@@ -83,6 +83,11 @@ module.exports = class Game {
     await Promise.all(dealCardsPromises);
   };
 
+  async resetRooms() {
+    const resetPromises = Object.keys(this.rooms).map((roomId) => this.rooms[roomId].resetRoom());
+    await Promise.all(resetPromises);
+  };
+
   changeRooms() {
     return new Promise((resolve) => {
       const roomKeys = Object.keys(this.rooms);
@@ -116,11 +121,6 @@ module.exports = class Game {
         winningPlayers.forEach((winningPlayer) => {
           updatedRooms[roomKeys[(roomKeys.indexOf(roomId) + 1) % roomKeys.length]][winningPlayer[0]] = this.players[winningPlayer[0]];
         });
-
-        // console.log('Leaderboard');
-        // console.log(sortedLeaderboard);
-        // console.log('Updated rooms');
-        // console.log(updatedRooms);
       });
 
       resolve(updatedRooms);
