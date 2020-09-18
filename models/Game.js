@@ -6,15 +6,19 @@ const shuffleArray = require('../helpers/shuffleArray');
 const chunkArray = require('../helpers/chunkArray');
 
 module.exports = class Game {
-  constructor(gameId) {
+  constructor(gameId, roomSize) {
     this.gameId = gameId;
+    this.roomSize = roomSize;
     this.players = {};
     this.teachers = {};
     this.rooms = {};
+
+    this.hasStarted = false;
+    this.adminToken = generateId(10, true);
   }
 
-  addTeacher(uid, socketId) {
-    this.teachers[uid] = new Teacher(uid, socketId);
+  addTeacher(uid, socketId, nickname) {
+    this.teachers[uid] = new Teacher(uid, socketId, nickname);
   }
 
   addPlayer(uid, socketId, nickname) {
@@ -29,11 +33,11 @@ module.exports = class Game {
     return Object.values(this.players).map((player) => player.getBasicData());
   }
 
-  createRooms(size) {
+  createRooms() {
     return new Promise((resolve) => {
       const playerIds = Object.values(this.players).map((player) => player.id);
-      const roomCount = Math.floor(playerIds.length / size);
-      const parsedIds = chunkArray(shuffleArray(playerIds), size);
+      const roomCount = Math.floor(playerIds.length / this.roomSize);
+      const parsedIds = chunkArray(shuffleArray(playerIds), this.roomSize);
 
       for (let i = 0; i < roomCount; i++) {
         const roomId = generateId(15);

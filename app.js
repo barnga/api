@@ -23,12 +23,13 @@ const gameList = new GameManager();
 io.on('connection', (socket) => {
   socket.on('create game', (values, fn) => {
     const gameId = generateId(6);
-    const game = new Game(gameId);
+    const game = new Game(gameId, values.playersPerRoom);
     const { sessionId } = socket.handshake.query;
+    const { adminToken } = game;
 
     gameList.addGame(game);
-    gameList.games[gameId].addTeacher(sessionId, socket.id);
-    fn({ success: true, gameId });
+    gameList.games[gameId].addTeacher(sessionId, socket.id, values.nickname || 'Admin');
+    fn({ success: true, gameId, adminToken });
   });
 
   socket.on('join game', (values, emitFn) => {
@@ -36,12 +37,45 @@ io.on('connection', (socket) => {
     const game = gameList.games[gameId];
     const { sessionId } = socket.handshake.query;
 
-    // TODO: Stop player from joining if game is in session
-    if (game) {
+    if (game && !game.hasStarted) {
       game.addPlayer(sessionId, socket.id, nickname);
       emitFn({ success: true });
+    } else if (game && game.hasStarted) {
+      emitFn({
+        success: false,
+        message: 'This game has already started.'
+      });
     } else {
-      emitFn({ success: false });
+      emitFn({
+        success: false,
+        message: 'The game with that code does not exist.'
+      });
+    }
+  });
+
+  socket.on('join admin', (values, emitFn) => {
+    const {gameId, nickname, adminToken} = values;
+    const game = gameList.games[gameId];
+    const {sessionId} = socket.handshake.query;
+
+    if (game && adminToken === game.adminToken && !game.hasStarted) {
+      game.addTeacher(sessionId, socket.id, nickname);
+      emitFn({ success: true, adminToken });
+    } else if (game && adminToken !== game.adminToken && !game.hasStarted) {
+      emitFn({
+        success: false,
+        message: 'Incorrect admin token.'
+      });
+    } else if (game && game.hasStarted) {
+      emitFn({
+        success: false,
+        message: 'This game has already started.'
+      });
+    } else {
+      emitFn({
+        success: false,
+        message: 'The game with that code does not exist.'
+      });
     }
   });
 
@@ -73,10 +107,11 @@ nsp.on('connection', (socket) => {
 
     socket.on('start game', (emitFn) => {
       // TODO: Customize player number and rulesheet count
-      const hasMinimumPlayers = Object.keys(game.players).length > 0;
+      const hasMinimumPlayers = Object.keys(game.players).length >= game.roomSize;
       emitFn({ hasMinimumPlayers });
       if (hasMinimumPlayers) {
-        game.createRooms(3)
+        game.hasStarted = true;
+        game.createRooms()
           .then(() => {
             Object.keys(game.rooms).forEach((roomId) => {
               Object.keys(game.rooms[roomId].players).forEach((playerId) => {
@@ -111,7 +146,7 @@ nsp.on('connection', (socket) => {
       };
       socket.nsp.to(roomId).emit('messages update', messageData);
 
-      // Send to teacher
+      // Send to teachers
       socket.nsp.emit('messages update room', {
         roomId: roomId,
         message: messageData,
@@ -119,29 +154,30 @@ nsp.on('connection', (socket) => {
     });
 
     socket.on('new message global', (message) => {
-      socket.nsp.emit('messages update', {
+      const sender = game.teachers[sessionId];
+      const messageData = {
         body: message,
-        sender: 'Admin',
+        sender: sender.nickname,
         global: true,
-      });
+      }
+
+      socket.nsp.emit('messages update', messageData);
 
       // Send to teacher
       Object.entries(game.rooms).forEach(([roomId, room]) => {
         socket.nsp.emit('messages update room', {
           roomId: roomId,
-          message: {
-            body: message,
-            sender: 'Admin',
-            global: true,
-          }
+          message: messageData
         });
       });
     });
 
     socket.on('new message room', (data) => {
+      const sender = game.teachers[sessionId];
+
       const message = {
         body: data.message,
-        sender: 'Admin',
+        sender: sender.nickname,
         global: false
       };
 
