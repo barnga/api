@@ -10,15 +10,18 @@ module.exports = class Room {
     this.players = players;
     this.rulesheetId = null;
 
+    this.voteForWinner = false;
     this.playedCards = [];
     this.turn = turn;
     this.leaderboard = leaderboard;
     this.showVoting = false;
+
     this.roundSettings = {
       disablePlayCard: false,
       showWinner: false,
       winner: null,
       playersWithCards: null,
+      votes: []
     };
   }
 
@@ -65,10 +68,15 @@ module.exports = class Room {
         this.players[playerId].hand = this.players[playerId].hand.filter((card) => card !== playedCard);
 
         if (this.playedCards.length === this.roundSettings.playersWithCards.length) {
-          this.endRound().then(() => {
-            this.setTurn(playerId);
-            resolve(true);
-          });
+          if (this.voteForWinner) {
+            this.showVoting = true;
+            resolve();
+          } else {
+            this.endRound().then(() => {
+              this.setTurn(playerId);
+              resolve(true);
+            });
+          }
         } else {
           this.setTurn(playerId);
           resolve();
@@ -81,6 +89,38 @@ module.exports = class Room {
 
   clearPlayedCards() {
     this.playedCards = [];
+  }
+
+  castVote(playerId) {
+    return new Promise((resolve) => {
+      this.roundSettings.votes.push(playerId);
+
+      if (this.roundSettings.votes.length === Object.keys(this.players).length) {
+        const votesPerPlayer = this.roundSettings.votes.reduce((allVotes, vote) => {
+          if (vote in allVotes) {
+            allVotes[vote]++;
+          } else {
+            allVotes[vote] = 1;
+          }
+
+          return allVotes;
+        }, {});
+        const winningScore = Math.max(...Object.values(votesPerPlayer));
+        const winners = Object.entries(votesPerPlayer).filter((player) => {
+          const [playerId, score] = player;
+          return score === winningScore;
+        });
+        const randomWinner = winners[Math.floor(Math.random() * winners.length)][0];
+
+        this.updatePlayerScore(randomWinner);
+        this.roundSettings.winner = randomWinner;
+        this.showVoting = false;
+
+        resolve(true);
+      } else {
+        resolve();
+      }
+    });
   }
 
   endRound() {
@@ -100,7 +140,7 @@ module.exports = class Room {
         .filter((cardData) => getSuit(cardData.playedCard) === getSuit(this.playedCards[0].playedCard));
       const winningPlayer = getWinningPlayer(cardsOfFirstSuit);
       this.updatePlayerScore(winningPlayer);
-      this.roundSettings = { ...this.roundSettings, winner: winningPlayer };
+      this.roundSettings.winner = winningPlayer;
     };
 
     return new Promise((resolve) => {
@@ -112,7 +152,7 @@ module.exports = class Room {
         if (trumpCards.length > 0) {
           const winningPlayer = getWinningPlayer(trumpCards);
           this.updatePlayerScore(getWinningPlayer(trumpCards));
-          this.roundSettings = { ...this.roundSettings, winner: winningPlayer };
+          this.roundSettings.winner = winningPlayer;
         } else {
           setWinningPlayer();
         }
@@ -125,12 +165,7 @@ module.exports = class Room {
   }
 
   updatePlayerScore(playerId) {
-    const leaderboardData = this.leaderboard[playerId];
-
-    this.leaderboard[playerId] = {
-      ...leaderboardData,
-      score: leaderboardData.score + 1,
-    };
+    this.leaderboard[playerId].score += 1;
   }
 
   resetRoom() {
@@ -138,15 +173,20 @@ module.exports = class Room {
       const playerKeys = Object.keys(this.players);
       playerKeys.forEach((playerId) => this.players[playerId].hand = []);
 
-      // TODO: reset leaderboard
-      this.playedCards = [];
+      this.leaderboard = Object.fromEntries(playerKeys.map((playerId) => {
+        return [playerId, { nickname: this.players[playerId].nickname, score: 0 }];
+      }));
       this.turn = playerKeys[Math.floor(Math.random() * playerKeys.length)];
+
+      this.playedCards = [];
+      this.voteForWinner = true;
       this.showVoting = false;
       this.roundSettings = {
         disablePlayCard: false,
         showWinner: false,
         winner: null,
         playersWithCards: null,
+        votes: [],
       };
 
       resolve();

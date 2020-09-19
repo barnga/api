@@ -77,16 +77,17 @@ nsp.on('connection', (socket) => {
       emitFn({ hasMinimumPlayers });
       if (hasMinimumPlayers) {
         game.createRooms(3)
-          .then(() => {
-            Object.keys(game.rooms).forEach((roomId) => {
-              Object.keys(game.rooms[roomId].players).forEach((playerId) => {
-                if (socket.nsp.connected[game.players[playerId].socketId]) {
-                  game.players[playerId].joinRoom(roomId);
-                  socket.nsp.connected[game.players[playerId].socketId].join(roomId);
-                }
+          .then(() => new Promise((resolve) => {
+              Object.keys(game.rooms).forEach((roomId) => {
+                Object.keys(game.rooms[roomId].players).forEach((playerId) => {
+                  if (socket.nsp.connected[game.players[playerId].socketId]) {
+                    game.players[playerId].joinRoom(roomId);
+                    socket.nsp.connected[game.players[playerId].socketId].join(roomId);
+                  }
+                });
               });
-            });
-          })
+              resolve();
+          }))
           .then(() => game.assignRulesheets(3))
           .then(() => game.dealCardsToAllRooms(7))
           .then(() => socket.nsp.emit('game started'));
@@ -102,6 +103,7 @@ nsp.on('connection', (socket) => {
     socket.on('get rooms', (emitFn) => emitFn({ rooms: game.getBasicRoomsData() }));
 
     socket.on('new message', (message) => {
+      console.log(Object.keys(socket.rooms));
       const roomId = Object.keys(socket.rooms)[1];
       const senderName = game.players[sessionId].nickname || 'Anonymous';
       const messageData = {
@@ -167,60 +169,80 @@ nsp.on('connection', (socket) => {
       });
     });
 
-    socket.on('play card', (card) => {
-      const roomId = Object.keys(socket.rooms)[1];
+    const endRoomRound = (roomId) => {
       const room = game.rooms[roomId];
       const emitGameUpdate = () => socket.nsp.to(roomId).emit('game update', room.getBasicData());
 
+      room.roundSettings = {
+        ...room.roundSettings,
+        disablePlayCard: true,
+        showWinner: true,
+      };
+      emitGameUpdate();
+
+      setTimeout(() => {
+        room.clearPlayedCards();
+        room.setPlayersWithCards();
+        room.roundSettings = {
+          ...room.roundSettings,
+          disablePlayCard: false,
+          showWinner: false,
+          winner: null,
+          votes: [],
+        };
+        emitGameUpdate();
+      }, 5000);
+    };
+
+    socket.on('play card', (card) => {
+      const roomId = game.players[sessionId].room;
+      const room = game.rooms[roomId];
+
       room.playCard(sessionId, card)
         .then((isRoundEnd) => {
-          emitGameUpdate();
-
-          if (isRoundEnd) {
-            room.roundSettings = {
-              ...room.roundSettings,
-              disablePlayCard: true,
-              showWinner: true,
-            };
-            emitGameUpdate();
-
-            setTimeout(() => {
-              room.clearPlayedCards();
-              room.setPlayersWithCards();
-              room.roundSettings = {
-                ...room.roundSettings,
-                disablePlayCard: false,
-                showWinner: false,
-              };
-              emitGameUpdate();
-            }, 5000);
-          }
+          socket.nsp.to(roomId).emit('game update', room.getBasicData());
+          if (isRoundEnd) endRoomRound(roomId);
         });
     });
 
-    socket.on('change rooms', () => game.changeRooms().then((updatedRooms) => {
-      console.log(updatedRooms);
-      return new Promise((resolve) => {
-        Object.entries(updatedRooms).forEach((updatedRoom, idx) => {
-          const [roomId, players] = updatedRoom;
-          game.rooms[roomId].players = players;
+    socket.on('vote', (playerId) => {
+      const roomId = game.players[sessionId].room;
+      game.rooms[roomId].castVote(playerId).then((isVotingDone) => {
+        if (isVotingDone) endRoomRound(roomId);
+      });
+    });
 
-          Object.keys(players).forEach((playerId) => {
-            game.players[playerId].joinRoom(roomId);
-            socket.nsp.connected[game.players[playerId].socketId].join(roomId);
+    socket.on('change rooms', () => game.changeRooms().then(async (updatedRooms) => {
+      const updateRoomPromises = Object.entries(updatedRooms).map(async (updatedRoom, idx) => {
+        const [roomId, players] = updatedRoom;
+        game.rooms[roomId].players = players;
+
+        const switchRoomPromises = Object.keys(players).map((playerId) => {
+          return new Promise((resolve) => {
+            const player = players[playerId];
+            const playerSocket = socket.nsp.connected[player.socketId];
+
+            playerSocket.leave(players[playerId].room, () => {
+              playerSocket.join(roomId, () => {
+                player.joinRoom(roomId);
+                resolve();
+              });
+            });
           });
         });
-        resolve();
-      })
+
+        await Promise.all(switchRoomPromises);
+      });
+
+      await Promise.all(updateRoomPromises);
+    })
         .then(() => game.resetRooms())
         .then(() => game.dealCardsToAllRooms(7))
         .then(() => {
           Object.keys(game.rooms).forEach((roomId) => {
-            console.log(game.rooms[roomId].getBasicData());
             socket.nsp.to(roomId).emit('game update', game.rooms[roomId].getBasicData());
           });
-        });
-    }));
+        }));
 
     socket.on('disconnect', () => {
       // TODO: Close game if teacher disconnects
