@@ -6,7 +6,7 @@ const GameManager = require('./models/GameManager');
 const Game = require('./models/Game');
 const generateId = require('./helpers/generateId');
 
-const port = process.env.port || 3000;
+const port = process.env.PORT || 3000;
 const app = express();
 app.use(index);
 
