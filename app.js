@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const cors = require('cors');
 const index = require('./routes/index');
 const GameManager = require('./models/GameManager');
 const Game = require('./models/Game');
@@ -9,10 +10,7 @@ const generateId = require('./helpers/generateId');
 const port = process.env.PORT || 3000;
 const app = express();
 
-app.use((req, res, next) => {
-  res.setHeader("Content-Security-Policy", "connect-src 'self' barngaproject.net; default-src 'none'; img-src 'self'");
-  next();
-});
+app.use(cors());
 app.use(index);
 
 const server = http.createServer(app);
