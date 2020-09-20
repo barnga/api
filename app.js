@@ -8,6 +8,11 @@ const generateId = require('./helpers/generateId');
 
 const port = process.env.PORT || 3000;
 const app = express();
+
+app.use((req, res, next) => {
+  res.setHeader("Content-Security-Policy", "connect-src 'self' barngaproject.net; default-src 'none'; img-src 'self'");
+  next();
+});
 app.use(index);
 
 const server = http.createServer(app);
