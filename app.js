@@ -142,12 +142,13 @@ nsp.on('connection', (socket) => {
     socket.on('new message', (message) => {
       console.log(Object.keys(socket.rooms));
       const roomId = Object.keys(socket.rooms)[1];
-      const senderName = game.players[sessionId].nickname || 'Anonymous';
+      const sender = game.players[sessionId];
       const messageData = {
         body: message,
-        sender: senderName,
+        sender: sender,
         global: false,
       };
+
       socket.nsp.to(roomId).emit('messages update', messageData);
 
       // Send to teachers
@@ -161,7 +162,7 @@ nsp.on('connection', (socket) => {
       const sender = game.teachers[sessionId];
       const messageData = {
         body: message,
-        sender: sender.nickname,
+        sender: sender,
         global: true,
       }
 
@@ -181,7 +182,7 @@ nsp.on('connection', (socket) => {
 
       const message = {
         body: data.message,
-        sender: sender.nickname,
+        sender: sender,
         global: false
       };
 
