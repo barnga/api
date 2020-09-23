@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
+const { expressCspHeader, SELF, NONE } = require('express-csp-header');
 const index = require('./routes/index');
 const GameManager = require('./models/GameManager');
 const Game = require('./models/Game');
@@ -10,6 +11,13 @@ const generateId = require('./helpers/generateId');
 const port = process.env.PORT || 3000;
 const app = express();
 
+app.use(expressCspHeader({
+  directives: {
+    'default-src': [NONE],
+    'connect-src': [SELF, 'https://www.barngaproject.net'],
+    'script-src': [SELF],
+  }
+}));
 app.use(cors());
 app.use(index);
 
