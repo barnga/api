@@ -102,7 +102,8 @@ nsp.on('connection', (socket) => {
   const game = gameList.games[gameId];
   const { sessionId } = socket.handshake.query;
 
-  console.log(gameId);
+  console.log('Socket NSP name: ');
+  console.log(socket.nsp.name);
   console.log(gameList);
   console.log(Object.keys(socket.nsp.connected));
 
