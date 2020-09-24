@@ -98,10 +98,12 @@ io.on('connection', (socket) => {
 });
 
 nsp.on('connection', (socket) => {
-  console.log(gameList);
   const gameId = socket.nsp['name'].split('/')[1];
   const game = gameList.games[gameId];
   const { sessionId } = socket.handshake.query;
+
+  console.log(gameId);
+  console.log(gameList);
 
   if (game) {
     // if (!game.teachers[sessionId] && !game.players[sessionId]) {
