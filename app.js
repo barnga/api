@@ -98,6 +98,7 @@ io.on('connection', (socket) => {
 });
 
 nsp.on('connection', (socket) => {
+  console.log(gameList);
   const gameId = socket.nsp['name'].split('/')[1];
   const game = gameList.games[gameId];
   const { sessionId } = socket.handshake.query;
@@ -174,7 +175,7 @@ nsp.on('connection', (socket) => {
         body: message,
         sender: sender,
         global: true,
-      }
+      };
 
       socket.nsp.emit('messages update', messageData);
 
