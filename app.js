@@ -41,8 +41,6 @@ io.on('connection', (socket) => {
     gameList.addGame(game);
     gameList.games[gameId].addTeacher(sessionId, socket.id, values.nickname || 'Admin');
     fn({ success: true, gameId, adminToken });
-
-    console.log(gameList);
   });
 
   socket.on('join game', (values, emitFn) => {
@@ -102,11 +100,6 @@ nsp.on('connection', (socket) => {
   const game = gameList.games[gameId];
   const { sessionId } = socket.handshake.query;
 
-  console.log('Socket NSP name: ');
-  console.log(socket.nsp.name);
-  console.log(gameList);
-  console.log(Object.keys(socket.nsp.connected));
-
   if (game) {
     // if (!game.teachers[sessionId] && !game.players[sessionId]) {
       // socket.emit('redirect to join');
@@ -155,7 +148,6 @@ nsp.on('connection', (socket) => {
     socket.on('get rooms', (emitFn) => emitFn({ rooms: game.getBasicRoomsData() }));
 
     socket.on('new message', (message) => {
-      console.log(Object.keys(socket.rooms));
       const roomId = Object.keys(socket.rooms)[1];
       const sender = game.players[sessionId];
       const messageData = {
@@ -299,7 +291,6 @@ nsp.on('connection', (socket) => {
         }));
 
     socket.on('disconnect', () => {
-      console.log('socket has disconnected from game');
       // TODO: Close game if teacher disconnects
       // TODO: Remove player from game AND room if disconnect (otherwise round will never end)
       if (sessionId) {
@@ -308,8 +299,6 @@ nsp.on('connection', (socket) => {
       }
       if (Object.keys(socket.nsp.connected).length === 0) {
         gameList.deleteGame(game);
-
-        console.log('deleting game');
       }
     });
   } else {
