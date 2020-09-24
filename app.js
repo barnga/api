@@ -104,6 +104,7 @@ nsp.on('connection', (socket) => {
 
   console.log(gameId);
   console.log(gameList);
+  console.log(Object.keys(socket.nsp.connected));
 
   if (game) {
     // if (!game.teachers[sessionId] && !game.players[sessionId]) {
