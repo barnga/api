@@ -10,11 +10,14 @@ module.exports = class Room {
     this.players = players;
     this.rulesheetId = null;
 
-    this.voteForWinner = false;
     this.playedCards = [];
     this.turn = turn;
     this.leaderboard = leaderboard;
+    this.voteForWinner = false;
     this.showVoting = false;
+
+    this.disableRules = false;
+    this.disableChat = false;
 
     this.roundSettings = {
       disablePlayCard: false,
@@ -70,6 +73,7 @@ module.exports = class Room {
         if (this.playedCards.length === this.roundSettings.playersWithCards.length) {
           if (this.voteForWinner) {
             this.showVoting = true;
+            this.roundSettings.disablePlayCard = true;
             resolve();
           } else {
             this.endRound().then(() => {
@@ -91,20 +95,21 @@ module.exports = class Room {
     this.playedCards = [];
   }
 
-  castVote(playerId) {
+  castVote(voterId, playerId) {
     return new Promise((resolve) => {
-      this.roundSettings.votes.push(playerId);
+      this.roundSettings.votes.push({ voterId, playerId });
 
       if (this.roundSettings.votes.length === Object.keys(this.players).length) {
-        const votesPerPlayer = this.roundSettings.votes.reduce((allVotes, vote) => {
-          if (vote in allVotes) {
-            allVotes[vote]++;
-          } else {
-            allVotes[vote] = 1;
-          }
+        const votesPerPlayer = this.roundSettings.votes.map((vote) => vote.playerId)
+          .reduce((allVotes, vote) => {
+            if (vote in allVotes) {
+              allVotes[vote]++;
+            } else {
+              allVotes[vote] = 1;
+            }
 
-          return allVotes;
-        }, {});
+            return allVotes;
+          }, {});
         const winningScore = Math.max(...Object.values(votesPerPlayer));
         const winners = Object.entries(votesPerPlayer).filter((player) => {
           const [playerId, score] = player;
@@ -181,6 +186,10 @@ module.exports = class Room {
       this.playedCards = [];
       this.voteForWinner = true;
       this.showVoting = false;
+
+      this.disableRules = true;
+      this.disableChat = true;
+
       this.roundSettings = {
         disablePlayCard: false,
         showWinner: false,
@@ -204,6 +213,8 @@ module.exports = class Room {
       leaderboard: this.leaderboard,
       roundSettings: this.roundSettings,
       showVoting: this.showVoting,
+      disableRules: this.disableRules,
+      disableChat: this.disableChat,
     };
   }
 };

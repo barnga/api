@@ -245,15 +245,18 @@ nsp.on('connection', (socket) => {
       const room = game.rooms[roomId];
 
       room.playCard(sessionId, card)
-        .then((isRoundEnd) => {
+        .then((isWinnerCalculated) => {
           socket.nsp.to(roomId).emit('game update', room.getBasicData());
-          if (isRoundEnd) endRoomRound(roomId);
+          if (isWinnerCalculated) endRoomRound(roomId);
         });
     });
 
     socket.on('vote', (playerId) => {
       const roomId = game.players[sessionId].room;
-      game.rooms[roomId].castVote(playerId).then((isVotingDone) => {
+      const room = game.rooms[roomId];
+
+      game.rooms[roomId].castVote(sessionId, playerId).then((isVotingDone) => {
+        socket.nsp.to(roomId).emit('vote update', room.roundSettings.votes);
         if (isVotingDone) endRoomRound(roomId);
       });
     });
