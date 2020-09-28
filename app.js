@@ -262,7 +262,11 @@ nsp.on('connection', (socket) => {
     });
 
     socket.on('redeal cards', (roomId) => {
-      game.rooms[roomId].resetRoom(false).then(() => {
+      const room = game.rooms[roomId];
+
+      room.resetRoom(false)
+        .then(() => room.dealCards(7))
+        .then(() => {
         socket.nsp.to(roomId).emit('game update', room.getBasicData());
       });
     });

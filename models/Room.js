@@ -187,8 +187,8 @@ module.exports = class Room {
       this.voteForWinner = isVotingRound;
       this.showVoting = false;
 
-      this.disableRules = true;
-      this.disableChat = true;
+      this.disableRules = isVotingRound;
+      this.disableChat = isVotingRound;
 
       this.roundSettings = {
         disablePlayCard: false,
