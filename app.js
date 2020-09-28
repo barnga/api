@@ -261,6 +261,12 @@ nsp.on('connection', (socket) => {
       });
     });
 
+    socket.on('redeal cards', (roomId) => {
+      game.rooms[roomId].resetRoom(false).then(() => {
+        socket.nsp.to(roomId).emit('game update', room.getBasicData());
+      });
+    });
+
     socket.on('change rooms', () => game.changeRooms().then(async (updatedRooms) => {
       const updateRoomPromises = Object.entries(updatedRooms).map(async (updatedRoom, idx) => {
         const [roomId, players] = updatedRoom;
@@ -285,7 +291,7 @@ nsp.on('connection', (socket) => {
 
       await Promise.all(updateRoomPromises);
     })
-        .then(() => game.resetRooms())
+        .then(() => game.resetRooms(true))
         .then(() => game.dealCardsToAllRooms(7))
         .then(() => {
           Object.keys(game.rooms).forEach((roomId) => {

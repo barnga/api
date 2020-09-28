@@ -173,7 +173,7 @@ module.exports = class Room {
     this.leaderboard[playerId].score += 1;
   }
 
-  resetRoom() {
+  resetRoom(isVotingRound) {
     return new Promise((resolve) => {
       const playerKeys = Object.keys(this.players);
       playerKeys.forEach((playerId) => this.players[playerId].hand = []);
@@ -184,7 +184,7 @@ module.exports = class Room {
       this.turn = playerKeys[Math.floor(Math.random() * playerKeys.length)];
 
       this.playedCards = [];
-      this.voteForWinner = true;
+      this.voteForWinner = isVotingRound;
       this.showVoting = false;
 
       this.disableRules = true;

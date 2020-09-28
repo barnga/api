@@ -87,8 +87,8 @@ module.exports = class Game {
     await Promise.all(dealCardsPromises);
   };
 
-  async resetRooms() {
-    const resetPromises = Object.keys(this.rooms).map((roomId) => this.rooms[roomId].resetRoom());
+  async resetRooms(isVotingRound) {
+    const resetPromises = Object.keys(this.rooms).map((roomId) => this.rooms[roomId].resetRoom(isVotingRound));
     await Promise.all(resetPromises);
   };
 
