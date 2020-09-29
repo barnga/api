@@ -215,9 +215,14 @@ nsp.on('connection', (socket) => {
       });
     });
 
-    const endRoomRound = (roomId) => {
+    const endRoomRound = (roomId, resetVoting) => {
       const room = game.rooms[roomId];
       const emitGameUpdate = () => socket.nsp.to(roomId).emit('game update', room.getBasicData());
+      const emitClearVoteUpdate = () => {
+        if (resetVoting) {
+          socket.nsp.to(roomId).emit('vote update', []);
+        }
+      };
 
       room.roundSettings = {
         ...room.roundSettings,
@@ -225,6 +230,7 @@ nsp.on('connection', (socket) => {
         showWinner: true,
       };
       emitGameUpdate();
+      emitClearVoteUpdate();
 
       setTimeout(() => {
         room.clearPlayedCards();
@@ -244,11 +250,13 @@ nsp.on('connection', (socket) => {
       const roomId = game.players[sessionId].room;
       const room = game.rooms[roomId];
 
-      room.playCard(sessionId, card)
-        .then((isWinnerCalculated) => {
-          socket.nsp.to(roomId).emit('game update', room.getBasicData());
-          if (isWinnerCalculated) endRoomRound(roomId);
-        });
+      if (room) {
+        room.playCard(sessionId, card)
+          .then((isWinnerCalculated) => {
+            socket.nsp.to(roomId).emit('game update', room.getBasicData());
+            if (isWinnerCalculated) endRoomRound(roomId);
+          });
+      }
     });
 
     socket.on('vote', (playerId) => {
@@ -257,7 +265,9 @@ nsp.on('connection', (socket) => {
 
       game.rooms[roomId].castVote(sessionId, playerId).then((isVotingDone) => {
         socket.nsp.to(roomId).emit('vote update', room.roundSettings.votes);
-        if (isVotingDone) endRoomRound(roomId);
+        if (isVotingDone) {
+          endRoomRound(roomId, true);
+        }
       });
     });
 
@@ -300,6 +310,7 @@ nsp.on('connection', (socket) => {
         .then(() => {
           Object.keys(game.rooms).forEach((roomId) => {
             socket.nsp.to(roomId).emit('game update', game.rooms[roomId].getBasicData());
+            socket.nsp.to(roomId).emit('vote update', []);
           });
         }));
 
