@@ -215,6 +215,15 @@ nsp.on('connection', (socket) => {
       });
     });
 
+    const emitTeacherGameUpdate = (room) => {
+      const teacherSockets = Object.entries(game.teachers).map((teacher) => {
+        const [teacherId, teacherData] = teacher;
+        return teacherData.socketId;
+      });
+
+      teacherSockets.forEach((teacherSocket) => socket.nsp.to(teacherSocket).emit('game update', room.getBasicData()));
+    };
+
     const endRoomRound = (roomId, resetVoting) => {
       const room = game.rooms[roomId];
       const emitGameUpdate = () => socket.nsp.to(roomId).emit('game update', room.getBasicData());
@@ -229,12 +238,15 @@ nsp.on('connection', (socket) => {
         disablePlayCard: true,
         showWinner: true,
       };
+
       emitGameUpdate();
+      // emitTeacherGameUpdate(room);
       emitClearVoteUpdate();
 
       setTimeout(() => {
         room.clearPlayedCards();
         room.setPlayersWithCards();
+
         room.roundSettings = {
           ...room.roundSettings,
           disablePlayCard: false,
@@ -242,7 +254,9 @@ nsp.on('connection', (socket) => {
           winner: null,
           votes: [],
         };
+
         emitGameUpdate();
+        emitTeacherGameUpdate(room);
       }, 5000);
     };
 
@@ -308,6 +322,8 @@ nsp.on('connection', (socket) => {
         .then(() => game.resetRooms(true))
         .then(() => game.dealCardsToAllRooms(7))
         .then(() => {
+          socket.emit('rooms update', { rooms: game.getBasicRoomsData() });
+
           Object.keys(game.rooms).forEach((roomId) => {
             socket.nsp.to(roomId).emit('game update', game.rooms[roomId].getBasicData());
             socket.nsp.to(roomId).emit('vote update', []);
