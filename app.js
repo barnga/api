@@ -240,7 +240,7 @@ nsp.on('connection', (socket) => {
       };
 
       emitGameUpdate();
-      // emitTeacherGameUpdate(room);
+      emitTeacherGameUpdate(room);
       emitClearVoteUpdate();
 
       setTimeout(() => {
@@ -268,6 +268,7 @@ nsp.on('connection', (socket) => {
         room.playCard(sessionId, card)
           .then((isWinnerCalculated) => {
             socket.nsp.to(roomId).emit('game update', room.getBasicData());
+            emitTeacherGameUpdate(room);
             if (isWinnerCalculated) endRoomRound(roomId);
           });
       }
