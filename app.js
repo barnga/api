@@ -292,8 +292,9 @@ nsp.on('connection', (socket) => {
       room.resetRoom(false)
         .then(() => room.dealCards(7))
         .then(() => {
-        socket.nsp.to(roomId).emit('game update', room.getBasicData());
-      });
+          socket.nsp.to(roomId).emit('game update', room.getBasicData());
+          emitTeacherGameUpdate(room);
+        });
     });
 
     socket.on('change rooms', () => game.changeRooms().then(async (updatedRooms) => {
