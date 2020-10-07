@@ -45,7 +45,7 @@ io.on('connection', (socket) => {
 
   socket.on('join game', (values, emitFn) => {
     const { gameId, nickname } = values;
-    const game = gameList.games[gameId.toLowerCase()];
+    const game = gameList.games[gameId];
     const { sessionId } = socket.handshake.query;
 
     if (game && !game.hasStarted) {
@@ -66,7 +66,7 @@ io.on('connection', (socket) => {
 
   socket.on('join admin', (values, emitFn) => {
     const {gameId, nickname, adminToken} = values;
-    const game = gameList.games[gameId.toLowerCasee()];
+    const game = gameList.games[gameId];
     const {sessionId} = socket.handshake.query;
 
     if (game && adminToken === game.adminToken && !game.hasStarted) {
