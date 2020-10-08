@@ -117,7 +117,10 @@ nsp.on('connection', (socket) => {
       const { nickname } = room.players[room.turn];
       const messageData = {
         body: `It's ${nickname}'s turn to play a card!`,
-        sender: 'System',
+        sender: {
+          nickname: 'System',
+          socketId: 0,
+        },
         system: true,
       };
 
