@@ -112,6 +112,27 @@ nsp.on('connection', (socket) => {
       socket.emit('200');
     // }
 
+    const sendTurn = (room, roomId) => {
+      // Send messages
+      const { nickname } = room.players[room.turn];
+      const messageData = {
+        body: `It's ${nickname}'s turn to play a card!`,
+        sender: 'System',
+        system: true,
+      };
+
+      console.log(messageData.body);
+
+      // Send to room
+      socket.nsp.to(roomId).emit('messages update', messageData);
+
+      // Send to teachers
+      socket.nsp.emit('messages update room', {
+        roomId: roomId,
+        message: messageData,
+      });
+    }
+
     socket.on('player loaded', () => {
       socket.nsp.emit('player update', game.getBasicPlayersData());
     });
@@ -135,7 +156,9 @@ nsp.on('connection', (socket) => {
           }))
           .then(() => game.assignRulesheets(3))
           .then(() => game.dealCardsToAllRooms(7))
-          .then(() => socket.nsp.emit('game started'));
+          .then(() => {
+            socket.nsp.emit('game started');
+          });
       }
     });
 
@@ -269,7 +292,12 @@ nsp.on('connection', (socket) => {
           .then((isWinnerCalculated) => {
             socket.nsp.to(roomId).emit('game update', room.getBasicData());
             emitTeacherGameUpdate(room);
-            if (isWinnerCalculated) endRoomRound(roomId);
+
+            if (isWinnerCalculated) {
+              endRoomRound(roomId);
+            } else {
+              sendTurn(room, roomId);
+            }
           });
       }
     });
