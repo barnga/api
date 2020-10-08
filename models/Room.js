@@ -67,7 +67,8 @@ module.exports = class Room {
   playCard(playerId, playedCard) {
     return new Promise((resolve) => {
       if (!this.roundSettings.disablePlayCard) {
-        this.playedCards.push({ playerId, playedCard });
+        const { nickname } = this.players[playerId];
+        this.playedCards.push({ playerId, playedCard, nickname });
         this.players[playerId].hand = this.players[playerId].hand.filter((card) => card !== playedCard);
 
         if (this.playedCards.length === this.roundSettings.playersWithCards.length) {
