@@ -22,7 +22,7 @@ app.use(cors());
 app.use(index);
 
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, { pingTimeout: 600000 });
 const nsp = io.of(/\w+/);
 
 server.listen(port, () => {
@@ -92,6 +92,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('Client disconnected');
+    console.log(socket.handshake.query.sessionId);
   });
 });
 
@@ -336,6 +337,7 @@ nsp.on('connection', (socket) => {
       // TODO: Close game if teacher disconnects
       // TODO: Remove player from game AND room if disconnect (otherwise round will never end)
       if (sessionId) {
+        console.log(`Disconnected from game: ${sessionId}`);
         game.deletePlayer(sessionId);
         socket.nsp.emit('player update', game.getBasicPlayersData());
       }
